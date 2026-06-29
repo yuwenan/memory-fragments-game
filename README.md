@@ -1,27 +1,28 @@
 # 记忆碎片 Memory Fragments
 
-第一人称密室逃脱解谜小游戏（Godot 4.7）。在废弃研究所的「觉醒室」醒来，借助线索推理出柜子密码，找到钥匙逃出房间。
+第一人称密室逃脱解谜小游戏。网页原生（零依赖 HTML/CSS/Canvas），中文原生渲染、秒加载、带视差/灰尘/灯光闪烁等氛围特效。
 
 ## 在线试玩
 
 https://yuwenan.github.io/memory-fragments-game/
 
-（用 Chrome/Edge/Safari 打开即可，无需安装。）
+Chrome / Edge / Safari 打开即可，无需安装。
 
 ## 第一关谜题
 
-观察墙上四个刻痕数字，结合台灯的光照方向（光从右往左扫过墙面），顺着光从右往左读 → 得到柜子密码。
+墙上四个刻痕数字顺序未知；台灯的光从右往左扫过墙面（纸条："光知道方向"）——顺着光从右往左读，即得柜子四位密码。
 
-## 本地开发
+## 目录
 
-用 Godot 4.7 打开本目录，运行 `scenes/main.tscn`。
+- `docs/` —— 网页游戏本体（GitHub Pages 托管目录）
+  - `index.html` / `style.css` / `game.js`
+  - `assets/` —— 压缩后的运行用图（JPEG）
+- `assets/` —— 美术母版（GPT 生成的原始 PNG，全分辨率）
 
 ## 重新部署
-
-改完代码后执行：
 
 ```bash
 ./deploy.sh
 ```
 
-会自动导出 Web 版、提交并推送，GitHub Pages 约 1 分钟后生效。
+提交并推送，GitHub Pages 约 1 分钟后生效。
