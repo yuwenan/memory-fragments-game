@@ -10,7 +10,8 @@ const CODE = "7931"; // 顺着灯光从右往左读墙上四个刻痕
 const MEMORIES = {
   frag1: {
     kicker: "记 忆 碎 片 · 01　觉醒室",
-    text: "刺眼的白光。皮带勒住你的手腕。\n一个很平静的声音在念：「记录完成 73%……继续。」\n然后，是黑。\n\n你醒在这张椅子上。墙上刻着 7931——\n是你自己的字迹。\n可你不记得，是什么时候刻下的。"
+    img: OBJ + "memory_fragment_01.jpg",
+    text: "照片从柜子深处滑出来。\n相纸边角写着「研究区 B」，还有一个日期。\n照片里的人穿着白大褂，对着镜头淡淡地笑——\n那是你的脸。\n可你不记得，自己曾经站在那里。"
   },
 };
 
@@ -85,7 +86,7 @@ const toast = $("#toast"), clueStat = $("#clueStat"), fragStat = $("#fragStat");
 const titleEl = $("#title"), lampGlow = $("#lampGlow");
 const popup = $("#popup"), popupImg = $("#popupImg"), popupTitle = $("#popupTitle"), popupDesc = $("#popupDesc");
 const keypad = $("#keypad"), digitsEl = $("#digits"), keysEl = $("#keys"), kpHint = $("#kpHint");
-const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"), mfClose = $("#mfClose");
+const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"), mfClose = $("#mfClose"), mfImg = $("#mfImg");
 const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBtn");
 const imgZoom = $("#imgZoom"), imgZoomImg = $("#imgZoomImg");
 
@@ -261,6 +262,8 @@ function showMemory(mem) {
   if (!mem) return;
   hoverLabel.style.display = "none";
   mfKicker.textContent = mem.kicker;
+  if (mem.img) { mfImg.src = mem.img; mfImg.classList.add("show"); }
+  else { mfImg.classList.remove("show"); mfImg.removeAttribute("src"); }
   mfText.textContent = "";
   mfClose.classList.remove("ready");
   memFlash.classList.remove("hidden");

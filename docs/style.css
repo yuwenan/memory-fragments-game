@@ -303,8 +303,12 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 .mf-static{position:absolute;inset:-50%;pointer-events:none;opacity:.06;
   background-image:var(--grain-tex);background-size:130px;animation:grain .4s steps(4) infinite;}
 .mf-body{position:relative;max-width:640px;text-align:center;padding:0 40px;}
-.mf-kicker{color:var(--brass-dim);font-size:13px;letter-spacing:8px;margin-bottom:28px;
+.mf-kicker{color:var(--brass-dim);font-size:13px;letter-spacing:8px;margin-bottom:24px;
   opacity:.85;text-shadow:0 0 12px rgba(150,100,40,.3);}
+/* 闪回画面：图在上、文字在下（px 相对720舞台，别用vh）*/
+.mf-img{display:none;max-width:430px;max-height:300px;object-fit:contain;margin:0 auto 26px;
+  filter:contrast(1.02) saturate(.95);box-shadow:0 16px 50px rgba(0,0,0,.7);}
+.mf-img.show{display:block;}
 .mf-text{color:#d2c8b4;font-size:20px;line-height:2.1;letter-spacing:2px;white-space:pre-line;
   text-shadow:0 2px 10px #000,0 0 30px rgba(0,0,0,.8);min-height:120px;}
 .mf-text .cur{color:var(--brass);opacity:.7;animation:caret 1s steps(1) infinite;}
