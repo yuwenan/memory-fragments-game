@@ -180,34 +180,39 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 .corner-close:hover{color:var(--brass);
   box-shadow:inset 0 1px 0 rgba(180,140,80,.18),inset 0 0 10px rgba(0,0,0,.7),0 0 14px rgba(150,100,40,.4);}
 
-/* ===== 检视弹窗（无框：内容直接浮在黑暗里，学记忆闪回那套）===== */
+/* ===== 检视弹窗：一块铆钉锈铁牌，纹理清晰、无亮边框、内容坐在牌上 ===== */
 #popup{position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at center,rgba(0,0,0,.92),rgba(0,0,0,.99));
-  backdrop-filter:blur(5px);opacity:0;transition:opacity .3s;}
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.86),rgba(0,0,0,.96));
+  backdrop-filter:blur(4px);opacity:0;transition:opacity .3s;}
 #popup.show{opacity:1;}
-/* 卡片不再是卡片：透明、无边框、无底板，仅作居中容器 */
-.popup-card{position:relative;background:none;border:none;border-radius:0;box-shadow:none;
-  padding:10px 30px;max-width:780px;max-height:90vh;overflow:visible;
+.popup-card{position:relative;
+  background:
+    linear-gradient(155deg,rgba(10,7,4,.34),rgba(5,3,2,.5)),
+    url("assets/ui/panel_metal.jpg") center/100% 100% no-repeat;
+  width:620px;max-width:88vw;max-height:90vh;border:none;border-radius:4px;
+  padding:28px 40px 22px;overflow:hidden;
   display:flex;flex-direction:column;align-items:center;
-  transform:scale(.99);transition:transform .3s,opacity .3s;}
+  box-shadow:0 46px 110px rgba(0,0,0,.92),0 0 0 1px rgba(0,0,0,.85),
+    inset 0 0 55px 3px rgba(0,0,0,.5);
+  transform:scale(.97);transition:transform .3s,opacity .3s;}
 .popup-card::before,.popup-card::after{display:none;}
-/* 无框弹窗的 ✕ 也去掉金属板，纯发光叉（密码盘/档案的板式 ✕ 不受影响）*/
-.popup-card>.corner-close{position:absolute;top:-2px;right:-6px;z-index:6;
-  background:none;border:none;box-shadow:none;color:#8a7a5c;font-size:20px;}
+/* ✕：纯发光叉，不带金属板 */
+.popup-card>.corner-close{position:absolute;top:12px;right:14px;z-index:6;
+  background:none;border:none;box-shadow:none;color:#9a8a6a;font-size:19px;}
 .popup-card>.corner-close:hover{color:var(--brass);box-shadow:none;
   text-shadow:0 0 12px rgba(160,105,40,.6);}
 #popup.show .popup-card{transform:scale(1);}
 .popup-card h2{color:var(--brass);font-size:21px;letter-spacing:8px;font-weight:600;
-  margin-bottom:22px;text-shadow:0 0 18px rgba(150,100,40,.45),0 2px 6px #000;}
-/* 图片：无框，边缘羽化融进黑暗，无黑边letterbox */
-.popup-img-wrap{width:auto;max-width:600px;height:auto;max-height:46vh;background:none;
-  border:none;border-radius:0;box-shadow:none;overflow:visible;display:flex;justify-content:center;}
-#popupImg{max-width:100%;max-height:46vh;object-fit:contain;filter:contrast(1.03) saturate(.96);
-  -webkit-mask-image:radial-gradient(ellipse 88% 86% at 50% 50%,#000 58%,transparent 100%);
-  mask-image:radial-gradient(ellipse 88% 86% at 50% 50%,#000 58%,transparent 100%);}
-#popupDesc{color:var(--bone);font-size:17px;line-height:1.95;letter-spacing:1.5px;
-  text-align:center;margin-top:26px;max-width:620px;white-space:pre-line;
-  text-shadow:0 2px 8px #000,0 0 20px rgba(0,0,0,.7);}
+  margin-bottom:18px;text-shadow:0 0 18px rgba(150,100,40,.5),0 2px 6px #000;}
+/* 图片：贴在铁牌上的一张照片，有限大小，暗框（不抢戏）*/
+.popup-img-wrap{width:auto;max-width:100%;height:auto;max-height:34vh;
+  border:1px solid rgba(0,0,0,.75);border-radius:2px;overflow:hidden;background:#040302;
+  box-shadow:0 8px 22px rgba(0,0,0,.65),inset 0 0 0 1px rgba(150,110,60,.10);
+  display:flex;justify-content:center;}
+#popupImg{max-width:100%;max-height:34vh;object-fit:contain;filter:contrast(1.03) saturate(.96);}
+#popupDesc{color:var(--bone);font-size:16px;line-height:1.85;letter-spacing:1px;
+  text-align:center;margin-top:18px;max-width:100%;white-space:pre-line;
+  text-shadow:0 2px 6px #000;}
 /* 关闭：低调文字，不是按钮 */
 #popupClose{margin-top:30px;padding:8px 22px;font-family:var(--font);font-size:14px;
   color:#9a8a6a;letter-spacing:6px;cursor:pointer;border-radius:0;
