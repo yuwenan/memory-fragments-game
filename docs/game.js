@@ -62,7 +62,7 @@ const ITEMS = {
     desc: "墙上钉着一张蓝图，线条像建筑，又像某种神经接线。\n角落印着小字：「镜像计划 · 意识备份流程」。\n你盯着它一阵心悸，却想不起为什么。"
   },
   chart: {
-    name: "病历夹", x: 1140, y: 278, w: 75, h: 95, lore: true,
+    name: "病历夹", x: 960, y: 252, w: 68, h: 118, lore: true,
     desc: "墙上挂着一块夹板，夹着一页脆黄的病历。\n姓名被人用力划掉，只剩一个编号。\n状态栏写着两个字——「待提取」。"
   },
 };
@@ -125,7 +125,7 @@ const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"
 const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBtn");
 const imgZoom = $("#imgZoom"), imgZoomImg = $("#imgZoomImg");
 const confirmBox = $("#confirmBox");
-const keyGlint = $("#keyGlint"), doorSeq = $("#doorSeq"), dsDoorImg = $("#dsDoorImg"), keySlot = $("#keySlot");
+const doorSeq = $("#doorSeq"), dsDoorImg = $("#dsDoorImg"), keySlot = $("#keySlot");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -258,25 +258,19 @@ function clickItem(id) {
   const it = ITEMS[id];
 
   if (id === "cabinet") {
-    if (state.cabinetSolved) {
-      if (!state.hasKey) {
-        state.hasKey = true; state.fragments++;
-        state.memories.push("frag1");
-        state.pendingMemory = "frag1"; // 关闭弹窗后：金光特写→闪回
-        pendingKeyGlint = true;
-        updateHUD(); saveGame();
-        showToast("获得：黄铜钥匙　+　第一段记忆碎片", 3200);
-        showPopup(OBJ + "cabinet_open.jpg", "金属柜 — 已打开",
-          "柜门缓缓滑开。里面躺着一把黄铜钥匙，和一张褪色的照片——\n照片上的日期，竟然是明天。这怎么可能？");
-      } else {
-        // 已取走钥匙：空柜子（同角度侧光版，空挂钩对上"钥匙已拿走"）
-        playSfx("click");
-        showPopup(OBJ + "cabinet_empty.jpg", "金属柜 — 已空",
-          "柜子空了。\n钥匙和那张照片，都被你拿走了。\n只剩锈迹，和一圈落灰的印子。");
-      }
-    } else {
+    if (!state.cabinetSolved) {        // 还没解锁：弹密码盘
       playSfx("keytap");
       showKeypad();
+    } else if (!state.hasKey) {         // 解锁后第一次点：直接拿钥匙+照片→看照片闪回
+      state.hasKey = true; state.fragments++;
+      state.memories.push("frag1");
+      updateHUD(); saveGame();
+      playSfx("clunk");
+      showToast("你拿起了黄铜钥匙，和柜子深处那张照片。", 3200);
+      showMemory(MEMORIES.frag1);       // 直接看那张照片＋这段记忆
+    } else {                            // 已经拿过：照片随时回「记忆档案」重看
+      playSfx("click");
+      showMemory(MEMORIES.frag1);
     }
     return;
   }
@@ -303,13 +297,6 @@ function updateHUD() {
   fragStat.textContent = `碎片　${state.fragments} / 5`;
   keySlot.classList.toggle("hidden", !state.hasKey);
 }
-// 拿钥匙金光特写（重启动画）
-function showKeyGlint() {
-  keyGlint.classList.add("hidden");
-  void keyGlint.offsetWidth; // 强制重排以重放动画
-  keyGlint.classList.remove("hidden");
-  setTimeout(() => keyGlint.classList.add("hidden"), 1850);
-}
 let toastTimer = null;
 function showToast(text, dur = 3000) {
   toast.textContent = text;
@@ -329,23 +316,9 @@ function showPopup(img, title, desc) {
   popup.classList.remove("hidden");
   requestAnimationFrame(() => popup.classList.add("show"));
 }
-let pendingKeyGlint = false;
 function hidePopup() {
   popup.classList.remove("show");
   setTimeout(() => popup.classList.add("hidden"), 220);
-  if (pendingKeyGlint) { // 拿钥匙金光特写，之后再闪回
-    pendingKeyGlint = false;
-    setTimeout(() => { showKeyGlint(); playSfx("clunk"); }, 280);
-    if (state.pendingMemory) {
-      const id = state.pendingMemory; state.pendingMemory = null;
-      setTimeout(() => showMemory(MEMORIES[id]), 2000);
-    }
-    return;
-  }
-  if (state.pendingMemory) {
-    const id = state.pendingMemory; state.pendingMemory = null;
-    setTimeout(() => showMemory(MEMORIES[id]), 320);
-  }
 }
 
 // ===== 记忆闪回 + 记忆档案 =====
