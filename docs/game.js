@@ -73,6 +73,7 @@ const state = {
   fragments: 0,
   hasKey: false,
   cabinetSolved: false,
+  photoSeen: false,  // 柜子开后：先看照片，再拿钥匙，最后空
   input: "",
   wrong: 0,
   memories: [],      // 已拾起的记忆碎片 id
@@ -87,6 +88,7 @@ function saveGame() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 1, clues: [...state.clues], fragments: state.fragments,
       hasKey: state.hasKey, cabinetSolved: state.cabinetSolved,
+      photoSeen: state.photoSeen,
       memories: state.memories, finished: state.finished,
     }));
   } catch (e) {}
@@ -100,6 +102,7 @@ function hasSave() {
 function resetState() {
   state.clues = new Set(); state.fragments = 0; state.hasKey = false;
   state.cabinetSolved = false; state.input = ""; state.wrong = 0;
+  state.photoSeen = false;
   state.memories = []; state.pendingMemory = null; state.finished = false;
 }
 function applySave(s) {
@@ -108,6 +111,7 @@ function applySave(s) {
   state.fragments = s.fragments || 0;
   state.hasKey = !!s.hasKey;
   state.cabinetSolved = !!s.cabinetSolved;
+  state.photoSeen = !!s.photoSeen;
   state.memories = s.memories || [];
   state.finished = !!s.finished;
   state.input = ""; state.wrong = 0; state.pendingMemory = null;
@@ -258,19 +262,24 @@ function clickItem(id) {
   const it = ITEMS[id];
 
   if (id === "cabinet") {
-    if (!state.cabinetSolved) {        // 还没解锁：弹密码盘
+    if (!state.cabinetSolved) {          // ① 还没解锁：弹密码盘
       playSfx("keytap");
       showKeypad();
-    } else if (!state.hasKey) {         // 解锁后第一次点：直接拿钥匙+照片→看照片闪回
-      state.hasKey = true; state.fragments++;
-      state.memories.push("frag1");
+    } else if (!state.photoSeen) {        // ② 解锁后先看那张照片
+      state.photoSeen = true;
+      if (!state.memories.includes("frag1")) { state.memories.push("frag1"); state.fragments++; }
+      updateHUD(); saveGame();
+      playSfx("paper");
+      pendingKeyHint = true;              // 闪回关掉后，提示去拿钥匙
+      showMemory(MEMORIES.frag1);
+    } else if (!state.hasKey) {           // ③ 看过照片：拿走钥匙
+      state.hasKey = true;
       updateHUD(); saveGame();
       playSfx("clunk");
-      showToast("你拿起了黄铜钥匙，和柜子深处那张照片。", 3200);
-      showMemory(MEMORIES.frag1);       // 直接看那张照片＋这段记忆
-    } else {                            // 已经拿过：照片随时回「记忆档案」重看
+      showToast("你伸手取下挂钩上的黄铜钥匙。柜子，空了。", 3200);
+    } else {                              // ④ 已空：照片随时回「记忆档案」重看
       playSfx("click");
-      showMemory(MEMORIES.frag1);
+      showToast("柜子空了。照片和钥匙，都在你身上了。", 2600);
     }
     return;
   }
@@ -349,10 +358,15 @@ function showMemory(mem) {
     }, 52);
   }, 950);
 }
+let pendingKeyHint = false;
 function closeMemory() {
   clearInterval(memTimer);
   memFlash.classList.remove("show");
   setTimeout(() => memFlash.classList.add("hidden"), 520);
+  if (pendingKeyHint) {   // 看完照片：暗示柜子里还有钥匙
+    pendingKeyHint = false;
+    setTimeout(() => showToast("照片背后的挂钩上，还垂着一把黄铜钥匙——再点一下柜子，取走它。", 4500), 700);
+  }
 }
 function openArchive() {
   maList.innerHTML = "";
