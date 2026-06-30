@@ -209,7 +209,14 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   border:1px solid rgba(0,0,0,.75);border-radius:2px;overflow:hidden;background:#040302;
   box-shadow:0 8px 22px rgba(0,0,0,.65),inset 0 0 0 1px rgba(150,110,60,.10);
   display:flex;justify-content:center;}
-#popupImg{max-width:440px;max-height:280px;object-fit:contain;filter:contrast(1.03) saturate(.96);}
+#popupImg{max-width:440px;max-height:280px;object-fit:contain;filter:contrast(1.03) saturate(.96);cursor:zoom-in;}
+
+/* 线索图放大查看 */
+#imgZoom{position:absolute;inset:0;z-index:72;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.95);cursor:zoom-out;opacity:0;transition:opacity .25s;}
+#imgZoom.show{opacity:1;}
+#imgZoomImg{max-width:1160px;max-height:670px;object-fit:contain;
+  border:1px solid rgba(110,80,44,.4);box-shadow:0 30px 90px rgba(0,0,0,.85);}
 #popupDesc{color:var(--bone);font-size:15px;line-height:1.95;letter-spacing:.5px;
   text-align:center;margin-top:16px;max-width:100%;white-space:pre-line;
   text-shadow:0 2px 6px #000;}
@@ -238,33 +245,44 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   background-image:var(--grain-tex);background-size:160px;opacity:.05;mix-blend-mode:overlay;
   animation:grain .5s steps(4) infinite;}
 .keypad-panel>*{position:relative;}
+/* ✕ 回到右上角，纯发光叉（曾被 >* 规则拉回普通流跑到左上）*/
+.keypad-panel>.corner-close{position:absolute;top:10px;right:12px;z-index:6;
+  background:none;border:none;box-shadow:none;color:#9a8a6a;font-size:19px;}
+.keypad-panel>.corner-close:hover{color:var(--brass);box-shadow:none;
+  text-shadow:0 0 12px rgba(160,105,40,.6);}
 #keypad.show .keypad-panel{transform:scale(1);}
-.keypad-panel .brand{text-align:center;color:#6b5736;font-size:11px;letter-spacing:5px;
-  margin-bottom:16px;text-shadow:0 1px 2px #000;}
-.digits{display:flex;justify-content:center;gap:9px;margin-bottom:12px;}
-.digit{width:50px;height:58px;display:flex;align-items:center;justify-content:center;
-  background:#030201;border:1px solid #3a2c19;border-radius:2px;
-  font-size:30px;color:var(--brass);font-variant-numeric:tabular-nums;
-  text-shadow:0 0 12px rgba(180,120,40,.55);
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.8);transition:border-color .15s,box-shadow .15s;}
-.digit.filled{border-color:rgba(150,108,52,.6);box-shadow:inset 0 2px 8px rgba(0,0,0,.8),0 0 12px rgba(140,90,30,.3);}
-.kp-hint{text-align:center;color:#6b6049;font-size:12.5px;letter-spacing:1px;
+.keypad-panel .brand{text-align:center;color:#7a6238;font-size:10.5px;letter-spacing:5px;
+  margin:2px 0 18px;text-shadow:0 1px 2px #000;}
+/* 机械读数：凹槽 + 辉光数字 */
+.digits{display:flex;justify-content:center;gap:8px;margin-bottom:14px;}
+.digit{width:46px;height:54px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 38%,#19110700,#19110700),radial-gradient(ellipse at 50% 38%,#1a1206,#040301);
+  border:1px solid #2c2114;border-radius:3px;
+  font-size:28px;color:#f0c074;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 14px rgba(200,140,50,.7);
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.85),inset 0 0 0 1px rgba(0,0,0,.5);
+  transition:border-color .15s,box-shadow .15s;}
+.digit.filled{border-color:rgba(170,120,55,.7);
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.85),0 0 14px rgba(160,100,35,.35);}
+.kp-hint{text-align:center;color:#7a6e52;font-size:12px;letter-spacing:1px;
   margin-bottom:16px;min-height:18px;transition:color .2s;}
-.kp-hint.err{color:#b85b50;text-shadow:0 0 10px rgba(150,40,30,.4);}
-.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.key{height:54px;display:flex;align-items:center;justify-content:center;
-  font-family:var(--font);font-size:21px;color:#a99a7e;cursor:pointer;border-radius:2px;
-  background:linear-gradient(180deg,#221a10,#120c07);
-  border:1px solid rgba(90,66,36,.4);
-  box-shadow:inset 0 1px 0 rgba(170,130,70,.1),inset 0 -2px 5px rgba(0,0,0,.5);
+.kp-hint.err{color:#c06a5e;text-shadow:0 0 10px rgba(150,40,30,.4);}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+/* 刻字金属按键 */
+.key{height:50px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font);font-size:20px;color:#c2ad86;cursor:pointer;border-radius:3px;
+  background:linear-gradient(180deg,#241b11,#15100a 55%,#0e0a06);
+  border:1px solid rgba(70,52,28,.5);
+  box-shadow:inset 0 1px 0 rgba(180,140,75,.14),inset 0 -3px 6px rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.4);
+  text-shadow:0 1px 1px #000,0 0 8px rgba(160,110,40,.22);
   transition:color .12s,box-shadow .12s,background .12s;}
-.key:hover{color:var(--brass);background:linear-gradient(180deg,#2c2113,#16100a);
-  box-shadow:inset 0 1px 0 rgba(170,130,70,.16),0 0 14px rgba(140,90,30,.3);}
-.key:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.8);}
-.key.confirm{background:linear-gradient(180deg,#3a2a12,#21160a);color:#dcb56e;border-color:rgba(150,108,52,.6);}
-.key.confirm:hover{background:linear-gradient(180deg,#4a3717,#2a1c0d);box-shadow:0 0 18px rgba(160,100,30,.45);}
-.key.clear{background:linear-gradient(180deg,#321813,#1b0d0a);color:#bf8077;border-color:rgba(120,60,50,.5);}
-.key.clear:hover{background:linear-gradient(180deg,#43201a,#24100c);box-shadow:0 0 16px rgba(140,50,40,.4);}
+.key:hover{color:#eccb85;background:linear-gradient(180deg,#2e2315,#1a120b 55%,#120c07);
+  box-shadow:inset 0 1px 0 rgba(180,140,75,.2),0 0 16px rgba(150,95,30,.35);}
+.key:active{transform:translateY(1px);box-shadow:inset 0 3px 9px rgba(0,0,0,.85);}
+.key.confirm{color:#e6bd72;background:linear-gradient(180deg,#3a2c14,#241809);border-color:rgba(150,108,52,.55);}
+.key.confirm:hover{background:linear-gradient(180deg,#46341a,#2a1c0d);box-shadow:0 0 18px rgba(160,100,30,.45);}
+.key.clear{color:#bf8a7e;background:linear-gradient(180deg,#2c1813,#180d0a);border-color:rgba(110,62,50,.5);}
+.key.clear:hover{background:linear-gradient(180deg,#3a201a,#20100c);box-shadow:0 0 16px rgba(140,55,40,.38);}
 
 /* ===== 静音开关 ===== */
 #muteBtn{position:absolute;top:16px;right:16px;z-index:35;width:38px;height:38px;

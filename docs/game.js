@@ -87,6 +87,7 @@ const popup = $("#popup"), popupImg = $("#popupImg"), popupTitle = $("#popupTitl
 const keypad = $("#keypad"), digitsEl = $("#digits"), keysEl = $("#keys"), kpHint = $("#kpHint");
 const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"), mfClose = $("#mfClose");
 const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBtn");
+const imgZoom = $("#imgZoom"), imgZoomImg = $("#imgZoomImg");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -123,8 +124,13 @@ function init() {
   fragStat.addEventListener("click", openArchive);
   $("#maClose").addEventListener("click", closeArchive);
   memArchive.addEventListener("click", e => { if (e.target === memArchive) closeArchive(); });
+  popupImg.addEventListener("click", openZoom);
+  imgZoom.addEventListener("click", closeZoom);
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") { hidePopup(); hideKeypad(); closeArchive(); }
+    if (e.key === "Escape") {
+      if (!imgZoom.classList.contains("hidden")) { closeZoom(); return; } // 先关放大
+      hidePopup(); hideKeypad(); closeArchive();
+    }
     if (keypad.classList.contains("show")) {
       if (e.key >= "0" && e.key <= "9") pressDigit(+e.key);
       else if (e.key === "Enter") confirmCode();
@@ -172,6 +178,12 @@ function buildHotspots() {
   });
 }
 
+// 每个物件的音色
+const SFX_BY_ID = {
+  lamp: "lamp", chisel: "metal", rules: "paper", blueprint: "paper",
+  chart: "paper", desk: "paper", bed: "cloth", wall: "click", mug: "click",
+};
+
 function clickItem(id) {
   const it = ITEMS[id];
 
@@ -182,11 +194,13 @@ function clickItem(id) {
         state.memories.push("frag1");
         state.pendingMemory = "frag1"; // 关闭弹窗后触发闪回
         updateHUD();
+        playSfx("clunk");
         showToast("获得：黄铜钥匙　+　第一段记忆碎片", 3200);
-      }
+      } else { playSfx("click"); }
       showPopup(OBJ + "cabinet_open.jpg", "金属柜 — 已打开",
         "柜门缓缓滑开。里面躺着一把黄铜钥匙，和一张褪色的照片——\n照片上的日期，竟然是明天。这怎么可能？");
     } else {
+      playSfx("keytap");
       showKeypad();
     }
     return;
@@ -194,8 +208,8 @@ function clickItem(id) {
 
   if (id === "door") {
     if (state.hasKey) winGame();
-    else showPopup(OBJ + "door.jpg", "出口门",
-      "厚重的铁门锁着。\n\n你需要一把钥匙——也许，就在那个金属柜里。");
+    else { playSfx("click"); showPopup(OBJ + "door.jpg", "出口门",
+      "厚重的铁门锁着。\n你需要一把钥匙——也许，就在那个金属柜里。"); }
     return;
   }
 
@@ -204,6 +218,7 @@ function clickItem(id) {
     state.clues.add(it.clue);
     updateHUD();
   }
+  playSfx(SFX_BY_ID[id] || "click");
   showPopup(it.img, it.name, it.desc);
 }
 
@@ -294,6 +309,20 @@ function closeArchive() {
   setTimeout(() => memArchive.classList.add("hidden"), 220);
 }
 
+// ===== 线索图放大查看 =====
+function openZoom() {
+  if (!popupImg.getAttribute("src")) return;
+  imgZoomImg.src = popupImg.src;
+  imgZoom.classList.remove("hidden");
+  requestAnimationFrame(() => imgZoom.classList.add("show"));
+  playSfx("click");
+}
+function closeZoom() {
+  if (imgZoom.classList.contains("hidden")) return;
+  imgZoom.classList.remove("show");
+  setTimeout(() => imgZoom.classList.add("hidden"), 250);
+}
+
 // ===== 密码键盘 =====
 function buildKeypad() {
   for (let i = 0; i < 4; i++) {
@@ -333,16 +362,18 @@ function renderDigits() {
   }
 }
 function pressDigit(n) {
-  if (state.input.length < 4) { state.input += n; renderDigits(); }
+  if (state.input.length < 4) { state.input += n; renderDigits(); playSfx("keytap"); }
 }
-function clearCode() { state.input = ""; renderDigits(); kpHint.textContent = "输入四位密码"; kpHint.classList.remove("err"); }
+function clearCode() { state.input = ""; renderDigits(); kpHint.textContent = "输入四位密码"; kpHint.classList.remove("err"); playSfx("keytap"); }
 function confirmCode() {
   if (state.input === CODE) {
     state.cabinetSolved = true;
+    playSfx("clunk");
     hideKeypad();
     showToast("咔哒——锁开了。柜门缓缓滑开，里面似乎有东西……", 4000);
   } else {
     state.wrong++;
+    playSfx("buzz");
     state.input = ""; renderDigits();
     kpHint.classList.add("err");
     kpHint.textContent = state.wrong >= 3
@@ -353,6 +384,7 @@ function confirmCode() {
 
 // ===== 通关 =====
 function winGame() {
+  playSfx("door");
   const flash = document.createElement("div");
   flash.id = "flash"; room.appendChild(flash);
   requestAnimationFrame(() => { flash.style.opacity = "0.9"; });
@@ -408,8 +440,45 @@ function stopTitleFX() {
 }
 
 // ===== 程序化氛围音（零音频文件：低频drone + 棕噪房间底噪 + 远处偶发闷响）=====
-let audioCtx = null, ambGain = null, muted = false;
+let audioCtx = null, ambGain = null, sfxGain = null, muted = false;
 const AMB_VOL = 0.13;
+
+// ===== 程序化音效（点击物件/拨灯/刻刀铮鸣/纸张/密码键/开锁/答错/开门）=====
+function sfxTone(freq, type, dur, vol, decayTo) {
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator(); o.type = type; o.frequency.value = freq;
+  const g = audioCtx.createGain(); const t = audioCtx.currentTime;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(decayTo || 0.0008, t + dur);
+  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + dur + 0.03);
+}
+function sfxNoise(dur, vol, filtType, filtFreq, q) {
+  if (!audioCtx) return;
+  const n = Math.floor(audioCtx.sampleRate * dur);
+  const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const f = audioCtx.createBiquadFilter(); f.type = filtType; f.frequency.value = filtFreq; if (q) f.Q.value = q;
+  const g = audioCtx.createGain(); const t = audioCtx.currentTime;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0006, t + dur);
+  src.connect(f); f.connect(g); g.connect(sfxGain); src.start(t); src.stop(t + dur + 0.03);
+}
+function playSfx(type) {
+  if (!audioCtx || muted) return;
+  switch (type) {
+    case "lamp":  sfxNoise(0.03, 0.3, "highpass", 1500); sfxTone(68, "sine", 0.55, 0.12); sfxTone(120, "sawtooth", 0.5, 0.04); break;
+    case "metal": sfxTone(1850, "sine", 0.55, 0.13); sfxTone(2760, "sine", 0.5, 0.07); sfxTone(3500, "sine", 0.45, 0.04); sfxNoise(0.09, 0.1, "bandpass", 4200, 2); break;
+    case "paper": sfxNoise(0.2, 0.13, "bandpass", 4200, 0.7); break;
+    case "cloth": sfxNoise(0.22, 0.1, "lowpass", 900, 0.5); break;
+    case "keytap":sfxTone(175, "square", 0.05, 0.12, 0.002); sfxNoise(0.03, 0.12, "lowpass", 1200); break;
+    case "clunk": sfxTone(80, "sine", 0.4, 0.32); sfxNoise(0.14, 0.2, "lowpass", 380); break;
+    case "buzz":  sfxTone(110, "sawtooth", 0.38, 0.18); sfxTone(117, "sawtooth", 0.35, 0.11); break;
+    case "door":  sfxTone(52, "sawtooth", 1.3, 0.18); sfxNoise(0.95, 0.1, "lowpass", 340); break;
+    default:      sfxNoise(0.045, 0.16, "bandpass", 2200, 1); // click
+  }
+}
 function initAmbient() {
   if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); return; }
   try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -417,6 +486,9 @@ function initAmbient() {
   ambGain = audioCtx.createGain();
   ambGain.gain.value = muted ? 0 : AMB_VOL;
   ambGain.connect(audioCtx.destination);
+  sfxGain = audioCtx.createGain();
+  sfxGain.gain.value = muted ? 0 : 0.5;
+  sfxGain.connect(audioCtx.destination);
 
   // 低频 drone：失谐振荡 + 缓慢 LFO 呼吸
   const droneFilter = audioCtx.createBiquadFilter();
@@ -468,6 +540,7 @@ function playCreak() {
 function toggleMute() {
   muted = !muted;
   if (ambGain) ambGain.gain.value = muted ? 0 : AMB_VOL;
+  if (sfxGain) sfxGain.gain.value = muted ? 0 : 0.5;
   muteBtn.classList.toggle("muted", muted);
 }
 
