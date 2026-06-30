@@ -6,6 +6,14 @@
 const STAGE_W = 1280, STAGE_H = 720;
 const CODE = "7931"; // 顺着灯光从右往左读墙上四个刻痕
 
+// ===== 记忆碎片文案（见 STORY.md）。玩家以为在「找回」，实则被录进镜像并删除 =====
+const MEMORIES = {
+  frag1: {
+    kicker: "记 忆 碎 片 · 01　觉醒室",
+    text: "刺眼的白光。皮带勒住你的手腕。\n一个很平静的声音在念：「记录完成 73%……继续。」\n然后，是黑。\n\n你醒在这张椅子上。墙上刻着 7931——\n是你自己的字迹。\n可你不记得，是什么时候刻下的。"
+  },
+};
+
 const OBJ = "assets/objects/";
 const BG = "assets/backgrounds/";
 
@@ -43,6 +51,8 @@ const state = {
   cabinetSolved: false,
   input: "",
   wrong: 0,
+  memories: [],      // 已拾起的记忆碎片 id
+  pendingMemory: null, // 关闭柜门弹窗后触发的闪回
 };
 
 // ===== DOM =====
@@ -53,6 +63,8 @@ const toast = $("#toast"), clueStat = $("#clueStat"), fragStat = $("#fragStat");
 const titleEl = $("#title"), lampGlow = $("#lampGlow");
 const popup = $("#popup"), popupImg = $("#popupImg"), popupTitle = $("#popupTitle"), popupDesc = $("#popupDesc");
 const keypad = $("#keypad"), digitsEl = $("#digits"), keysEl = $("#keys"), kpHint = $("#kpHint");
+const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"), mfClose = $("#mfClose");
+const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBtn");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -85,8 +97,13 @@ function init() {
   popup.addEventListener("click", e => { if (e.target === popup) hidePopup(); });
   $("#kpClose").addEventListener("click", hideKeypad);
   keypad.addEventListener("click", e => { if (e.target === keypad) hideKeypad(); });
+  mfClose.addEventListener("click", closeMemory);
+  muteBtn.addEventListener("click", toggleMute);
+  fragStat.addEventListener("click", openArchive);
+  $("#maClose").addEventListener("click", closeArchive);
+  memArchive.addEventListener("click", e => { if (e.target === memArchive) closeArchive(); });
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") { hidePopup(); hideKeypad(); }
+    if (e.key === "Escape") { hidePopup(); hideKeypad(); closeArchive(); }
     if (keypad.classList.contains("show")) {
       if (e.key >= "0" && e.key <= "9") pressDigit(+e.key);
       else if (e.key === "Enter") confirmCode();
@@ -96,6 +113,7 @@ function init() {
 }
 
 function startGame() {
+  initAmbient(); // 必须在点击手势内创建 AudioContext
   titleEl.style.opacity = "0";
   stopTitleFX();
   setTimeout(() => {
@@ -140,6 +158,8 @@ function clickItem(id) {
     if (state.cabinetSolved) {
       if (!state.hasKey) {
         state.hasKey = true; state.fragments++;
+        state.memories.push("frag1");
+        state.pendingMemory = "frag1"; // 关闭弹窗后触发闪回
         updateHUD();
         showToast("获得：黄铜钥匙　+　第一段记忆碎片", 3200);
       }
@@ -191,6 +211,64 @@ function showPopup(img, title, desc) {
 function hidePopup() {
   popup.classList.remove("show");
   setTimeout(() => popup.classList.add("hidden"), 220);
+  if (state.pendingMemory) {
+    const id = state.pendingMemory; state.pendingMemory = null;
+    setTimeout(() => showMemory(MEMORIES[id]), 320);
+  }
+}
+
+// ===== 记忆闪回 + 记忆档案 =====
+let memTimer = null;
+function showMemory(mem) {
+  if (!mem) return;
+  hoverLabel.style.display = "none";
+  mfKicker.textContent = mem.kicker;
+  mfText.textContent = "";
+  mfClose.classList.remove("ready");
+  memFlash.classList.remove("hidden");
+  memFlash.classList.add("flashin");
+  requestAnimationFrame(() => memFlash.classList.add("show"));
+  setTimeout(() => memFlash.classList.remove("flashin"), 1100);
+  // 洗白冲击后再打字
+  clearInterval(memTimer);
+  setTimeout(() => {
+    let i = 0; const txt = mem.text;
+    memTimer = setInterval(() => {
+      i++;
+      mfText.textContent = txt.slice(0, i);
+      if (i >= txt.length) {
+        clearInterval(memTimer);
+        setTimeout(() => mfClose.classList.add("ready"), 600);
+      }
+    }, 52);
+  }, 950);
+}
+function closeMemory() {
+  clearInterval(memTimer);
+  memFlash.classList.remove("show");
+  setTimeout(() => memFlash.classList.add("hidden"), 520);
+}
+function openArchive() {
+  maList.innerHTML = "";
+  if (!state.memories.length) {
+    maList.innerHTML = '<div class="ma-empty">还没有拾起任何记忆碎片。</div>';
+  } else {
+    for (const id of state.memories) {
+      const m = MEMORIES[id]; if (!m) continue;
+      const d = document.createElement("div");
+      d.className = "ma-item";
+      const t = document.createElement("div"); t.className = "ma-t"; t.textContent = m.kicker;
+      const c = document.createElement("div"); c.className = "ma-c"; c.textContent = m.text;
+      d.appendChild(t); d.appendChild(c); maList.appendChild(d);
+    }
+  }
+  memArchive.classList.remove("hidden");
+  requestAnimationFrame(() => memArchive.classList.add("show"));
+}
+function closeArchive() {
+  if (memArchive.classList.contains("hidden")) return;
+  memArchive.classList.remove("show");
+  setTimeout(() => memArchive.classList.add("hidden"), 220);
 }
 
 // ===== 密码键盘 =====
@@ -304,6 +382,70 @@ function initTitleFX() {
 function stopTitleFX() {
   if (titleRAF) cancelAnimationFrame(titleRAF), titleRAF = null;
   if (titleFlick) clearInterval(titleFlick), titleFlick = null;
+}
+
+// ===== 程序化氛围音（零音频文件：低频drone + 棕噪房间底噪 + 远处偶发闷响）=====
+let audioCtx = null, ambGain = null, muted = false;
+const AMB_VOL = 0.13;
+function initAmbient() {
+  if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); return; }
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+  catch (e) { return; }
+  ambGain = audioCtx.createGain();
+  ambGain.gain.value = muted ? 0 : AMB_VOL;
+  ambGain.connect(audioCtx.destination);
+
+  // 低频 drone：失谐振荡 + 缓慢 LFO 呼吸
+  const droneFilter = audioCtx.createBiquadFilter();
+  droneFilter.type = "lowpass"; droneFilter.frequency.value = 220;
+  droneFilter.connect(ambGain);
+  [55, 55.4, 82.5].forEach((f, idx) => {
+    const o = audioCtx.createOscillator();
+    o.type = idx === 2 ? "sine" : "triangle"; o.frequency.value = f;
+    const g = audioCtx.createGain(); g.gain.value = idx === 2 ? 0.22 : 0.5;
+    o.connect(g); g.connect(droneFilter); o.start();
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.05 + idx * 0.02;
+    const lg = audioCtx.createGain(); lg.gain.value = 0.18;
+    lfo.connect(lg); lg.connect(g.gain); lfo.start();
+  });
+
+  // 棕噪房间底噪
+  const n = audioCtx.sampleRate * 2;
+  const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; data[i] = last * 3.5; }
+  const noise = audioCtx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+  const nf = audioCtx.createBiquadFilter(); nf.type = "lowpass"; nf.frequency.value = 600;
+  const ng = audioCtx.createGain(); ng.gain.value = 0.12;
+  noise.connect(nf); nf.connect(ng); ng.connect(ambGain); noise.start();
+
+  scheduleCreak();
+}
+function scheduleCreak() {
+  if (!audioCtx) return;
+  setTimeout(() => {
+    if (audioCtx && !muted) playCreak();
+    scheduleCreak();
+  }, 7000 + Math.random() * 14000);
+}
+function playCreak() {
+  const dur = 0.6 + Math.random() * 0.9;
+  const o = audioCtx.createOscillator(); o.type = "sawtooth";
+  o.frequency.value = 38 + Math.random() * 46;
+  const f = audioCtx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 280;
+  const g = audioCtx.createGain(); g.gain.value = 0;
+  o.connect(f); f.connect(g); g.connect(ambGain);
+  const t = audioCtx.currentTime;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.22, t + 0.06);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function toggleMute() {
+  muted = !muted;
+  if (ambGain) ambGain.gain.value = muted ? 0 : AMB_VOL;
+  muteBtn.classList.toggle("muted", muted);
 }
 
 // ===== 特效：鼠标视差 + 灯光闪烁 + 灰尘粒子 =====
