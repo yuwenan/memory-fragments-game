@@ -180,64 +180,41 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 .corner-close:hover{color:var(--brass);
   box-shadow:inset 0 1px 0 rgba(180,140,80,.18),inset 0 0 10px rgba(0,0,0,.7),0 0 14px rgba(150,100,40,.4);}
 
-/* ===== 图片弹窗（锈蚀金属检视面板）===== */
+/* ===== 检视弹窗（无框：内容直接浮在黑暗里，学记忆闪回那套）===== */
 #popup{position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at center,rgba(0,0,0,.86),rgba(0,0,0,.96));
-  backdrop-filter:blur(3px);opacity:0;transition:opacity .22s;}
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.92),rgba(0,0,0,.99));
+  backdrop-filter:blur(5px);opacity:0;transition:opacity .3s;}
 #popup.show{opacity:1;}
-.popup-card{position:relative;
-  background:
-    linear-gradient(160deg,rgba(11,8,5,.70),rgba(6,4,3,.82) 70%,rgba(4,3,2,.86)),
-    radial-gradient(ellipse 120% 80% at 50% 0%,rgba(80,52,22,.16),transparent 60%),
-    url("assets/ui/panel_metal.jpg") center/100% 100% no-repeat;
-  border:1px solid rgba(110,80,44,.5);border-radius:3px;
-  padding:24px 30px 20px;max-width:720px;max-height:660px;
+/* 卡片不再是卡片：透明、无边框、无底板，仅作居中容器 */
+.popup-card{position:relative;background:none;border:none;border-radius:0;box-shadow:none;
+  padding:10px 30px;max-width:780px;max-height:90vh;overflow:visible;
   display:flex;flex-direction:column;align-items:center;
-  box-shadow:0 30px 90px rgba(0,0,0,.85),
-    inset 0 0 70px rgba(0,0,0,.75),
-    inset 0 0 0 1px rgba(0,0,0,.6),
-    inset 0 0 0 2px rgba(120,88,48,.10);
-  transform:scale(.96) translateY(6px);transition:transform .25s,opacity .25s;
-  overflow:hidden;}
-/* 卡片内胶片颗粒 + 四角暗角，破掉扁平干净感 */
-.popup-card::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background-image:var(--grain-tex);background-size:160px;opacity:.05;mix-blend-mode:overlay;
-  animation:grain .5s steps(4) infinite;}
-.popup-card::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  border-radius:3px;
-  box-shadow:inset 0 0 120px rgba(0,0,0,.7);}
-.popup-card>*{position:relative;z-index:1;}
-/* 关闭键必须保持绝对定位在右上角（别被上面的 >* 规则拉回普通流居中）*/
-.popup-card>.corner-close,.keypad-panel>.corner-close{position:absolute;z-index:6;}
-#popup.show .popup-card{transform:scale(1) translateY(0);}
-.popup-card h2{color:var(--brass);font-size:22px;letter-spacing:6px;font-weight:600;
-  margin-bottom:16px;text-shadow:0 0 14px rgba(150,100,40,.4),0 2px 4px #000;
-  padding-bottom:10px;border-bottom:1px solid rgba(110,80,44,.28);}
-.popup-img-wrap{width:600px;max-width:62vw;height:340px;max-height:42vh;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:2px;overflow:hidden;background:#040302;
-  border:1px solid rgba(90,64,34,.5);
-  box-shadow:0 10px 30px rgba(0,0,0,.6) inset,0 0 0 4px rgba(0,0,0,.5),
-    0 0 0 5px rgba(120,88,48,.14);}
-#popupImg{max-width:100%;max-height:100%;object-fit:contain;
-  filter:contrast(1.04) saturate(.95);}
-#popupDesc{color:var(--bone);font-size:16.5px;line-height:1.8;letter-spacing:1px;
-  text-align:center;margin-top:18px;max-width:600px;white-space:pre-line;
-  text-shadow:0 1px 3px #000;}
-/* 刻字金属铭牌按钮 */
-#popupClose{margin-top:20px;padding:12px 36px;font-family:var(--font);font-size:15px;
-  color:var(--brass);letter-spacing:5px;cursor:pointer;border-radius:2px;
-  background:linear-gradient(180deg,#2a2014,#150f08);
-  border:1px solid rgba(120,88,46,.55);
-  box-shadow:inset 0 1px 0 rgba(190,150,90,.18),inset 0 -2px 6px rgba(0,0,0,.6),
-    0 4px 14px rgba(0,0,0,.5);
-  text-shadow:0 0 10px rgba(170,110,40,.35),0 1px 2px #000;
-  transition:color .18s,box-shadow .18s,background .18s;}
-#popupClose:hover{color:#e7c079;background:linear-gradient(180deg,#33271700,#33271700),linear-gradient(180deg,#332717,#1b130a);
-  box-shadow:inset 0 1px 0 rgba(190,150,90,.25),inset 0 -2px 6px rgba(0,0,0,.6),
-    0 0 22px rgba(150,95,30,.5);}
-#popupClose:active{box-shadow:inset 0 2px 8px rgba(0,0,0,.8);transform:translateY(1px);}
-.popup-hint{color:#4a443a;font-size:11.5px;margin-top:12px;letter-spacing:2px;}
+  transform:scale(.99);transition:transform .3s,opacity .3s;}
+.popup-card::before,.popup-card::after{display:none;}
+/* 无框弹窗的 ✕ 也去掉金属板，纯发光叉（密码盘/档案的板式 ✕ 不受影响）*/
+.popup-card>.corner-close{position:absolute;top:-2px;right:-6px;z-index:6;
+  background:none;border:none;box-shadow:none;color:#8a7a5c;font-size:20px;}
+.popup-card>.corner-close:hover{color:var(--brass);box-shadow:none;
+  text-shadow:0 0 12px rgba(160,105,40,.6);}
+#popup.show .popup-card{transform:scale(1);}
+.popup-card h2{color:var(--brass);font-size:21px;letter-spacing:8px;font-weight:600;
+  margin-bottom:22px;text-shadow:0 0 18px rgba(150,100,40,.45),0 2px 6px #000;}
+/* 图片：无框，边缘羽化融进黑暗，无黑边letterbox */
+.popup-img-wrap{width:auto;max-width:600px;height:auto;max-height:46vh;background:none;
+  border:none;border-radius:0;box-shadow:none;overflow:visible;display:flex;justify-content:center;}
+#popupImg{max-width:100%;max-height:46vh;object-fit:contain;filter:contrast(1.03) saturate(.96);
+  -webkit-mask-image:radial-gradient(ellipse 88% 86% at 50% 50%,#000 58%,transparent 100%);
+  mask-image:radial-gradient(ellipse 88% 86% at 50% 50%,#000 58%,transparent 100%);}
+#popupDesc{color:var(--bone);font-size:17px;line-height:1.95;letter-spacing:1.5px;
+  text-align:center;margin-top:26px;max-width:620px;white-space:pre-line;
+  text-shadow:0 2px 8px #000,0 0 20px rgba(0,0,0,.7);}
+/* 关闭：低调文字，不是按钮 */
+#popupClose{margin-top:30px;padding:8px 22px;font-family:var(--font);font-size:14px;
+  color:#9a8a6a;letter-spacing:6px;cursor:pointer;border-radius:0;
+  background:none;border:none;
+  text-shadow:0 1px 3px #000;transition:color .2s,text-shadow .2s;}
+#popupClose:hover{color:var(--brass);text-shadow:0 0 14px rgba(160,105,40,.5),0 1px 3px #000;}
+.popup-hint{color:#4a443a;font-size:11.5px;margin-top:10px;letter-spacing:2px;}
 
 /* ===== 密码键盘（生锈机械门锁）===== */
 #keypad{position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;
