@@ -77,6 +77,7 @@ function init() {
   buildHotspots();
   buildKeypad();
   initFX();
+  initTitleFX();
 
   $("#startBtn").addEventListener("click", startGame);
   $("#popupClose").addEventListener("click", hidePopup);
@@ -96,6 +97,7 @@ function init() {
 
 function startGame() {
   titleEl.style.opacity = "0";
+  stopTitleFX();
   setTimeout(() => {
     titleEl.classList.add("hidden");
     room.classList.remove("hidden");
@@ -259,6 +261,49 @@ function winGame() {
       "钥匙转动，铁门沉重地打开了。\n\n走廊里弥漫着同样的尘味，更深的黑暗在前方等待……\n\n—— 第一关「觉醒室」通关 ——");
     flash.remove();
   }, 360);
+}
+
+// ===== 首屏电影级特效：浮尘 + 吊灯明灭 =====
+let titleRAF = null, titleFlick = null;
+function initTitleFX() {
+  const cv = $("#titleDust"), ctx = cv.getContext("2d");
+  cv.width = STAGE_W; cv.height = STAGE_H;
+  const motes = [];
+  const mk = spawn => ({
+    x: Math.random() * STAGE_W,
+    y: spawn ? Math.random() * STAGE_H : STAGE_H + 8,
+    r: 0.5 + Math.random() * 2.0,
+    vy: -(0.05 + Math.random() * 0.22),
+    vx: (Math.random() - 0.5) * 0.25,
+    a: 0.06 + Math.random() * 0.3,
+    tw: Math.random() * Math.PI * 2,
+  });
+  for (let i = 0; i < 60; i++) motes.push(mk(true));
+  function loop() {
+    ctx.clearRect(0, 0, STAGE_W, STAGE_H);
+    for (const m of motes) {
+      m.y += m.vy; m.x += m.vx + Math.sin(m.tw) * 0.12; m.tw += 0.015;
+      if (m.y < -8) Object.assign(m, mk(false));
+      const a = m.a * (0.5 + 0.5 * Math.sin(m.tw));
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220,200,170,${a})`;
+      ctx.fill();
+    }
+    titleRAF = requestAnimationFrame(loop);
+  }
+  loop();
+  // 走廊吊灯明灭
+  let f = 1;
+  titleFlick = setInterval(() => {
+    const dip = Math.random() < 0.1 ? 0.5 + Math.random() * 0.25 : 0.88 + Math.random() * 0.2;
+    f += (dip - f) * 0.45;
+    titleEl.style.setProperty("--tflick", f.toFixed(3));
+  }, 100);
+}
+function stopTitleFX() {
+  if (titleRAF) cancelAnimationFrame(titleRAF), titleRAF = null;
+  if (titleFlick) clearInterval(titleFlick), titleFlick = null;
 }
 
 // ===== 特效：鼠标视差 + 灯光闪烁 + 灰尘粒子 =====

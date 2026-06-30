@@ -95,28 +95,82 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   opacity:0;visibility:hidden;transition:opacity .3s, transform .3s;}
 #toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
 
-/* ===== 标题封面 ===== */
-#title{position:absolute;inset:0;z-index:60;
-  background:center/cover no-repeat;background-image:var(--titlebg);
+/* ===== 标题封面（电影级）===== */
+#title{position:absolute;inset:0;z-index:60;overflow:hidden;background:#000;
   display:flex;align-items:flex-end;justify-content:center;
   transition:opacity .8s ease;}
-/* 标题图原样使用，不加任何遮罩/渐变；仅靠文字阴影保证可读 */
-.title-grad{display:none;}
-.title-content{position:relative;text-align:center;margin-bottom:120px;}
-#title h1{color:var(--amber);font-size:54px;font-weight:600;letter-spacing:6px;
-  text-shadow:0 2px 12px #000,0 4px 30px rgba(0,0,0,.95),0 0 50px rgba(0,0,0,.8);}
-#title .subtitle{color:#a89fb0;font-size:17px;letter-spacing:5px;margin-top:14px;
-  text-shadow:0 2px 10px #000,0 0 20px rgba(0,0,0,.9);}
-#title .tagline{color:#b3aeb8;font-size:15px;margin-top:22px;letter-spacing:1px;
-  text-shadow:0 2px 10px #000,0 0 16px rgba(0,0,0,.95);}
-.version{position:absolute;left:16px;bottom:14px;color:#4a4750;font-size:12px;letter-spacing:1px;}
 
-#startBtn{margin-top:30px;padding:14px 0;width:240px;font-family:var(--font);
-  font-size:20px;letter-spacing:4px;color:var(--amber);cursor:pointer;
-  background:rgba(245,199,114,.12);border:2px solid rgba(245,199,114,.75);border-radius:12px;
-  transition:all .2s;}
-#startBtn:hover{background:rgba(245,199,114,.26);border-color:#ffe0a0;
-  box-shadow:0 0 28px rgba(245,199,114,.4);transform:translateY(-1px);}
+/* 走廊背景：缓慢推近（Ken Burns），往走廊深处暖光推 */
+#titleBg{position:absolute;inset:-4%;background:center/cover no-repeat;
+  background-image:var(--titlebg);transform-origin:50% 44%;
+  animation:kenburns 34s ease-in-out infinite alternate;}
+@keyframes kenburns{
+  0%{transform:scale(1.02) translateY(0)}
+  100%{transform:scale(1.16) translateY(-1.5%)} }
+
+/* 走廊尽头吊灯：暖光明灭 */
+#titleLamp{position:absolute;left:50%;top:44%;width:38%;height:46%;
+  transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 46% 50% at 50% 50%,
+     rgba(255,180,90,.30),rgba(255,150,70,.10) 48%,transparent 72%);
+  opacity:var(--tflick,1);}
+
+/* 飘动雾气 */
+.title-fog{position:absolute;inset:-20%;pointer-events:none;opacity:.5;
+  background:radial-gradient(ellipse 50% 36% at 30% 70%,rgba(120,120,135,.10),transparent 60%),
+            radial-gradient(ellipse 44% 30% at 72% 64%,rgba(110,115,130,.09),transparent 62%);}
+.fog1{animation:fogDrift 46s linear infinite;}
+.fog2{animation:fogDrift 64s linear infinite reverse;opacity:.35;}
+@keyframes fogDrift{0%{transform:translate(-4%,1%)}50%{transform:translate(4%,-2%)}100%{transform:translate(-4%,1%)}}
+
+#titleDust{position:absolute;inset:0;pointer-events:none;}
+
+/* 胶片颗粒 */
+#titleGrain{position:absolute;inset:-50%;pointer-events:none;opacity:.05;
+  background-image:var(--grain-tex);background-size:140px;
+  animation:grain .5s steps(4) infinite;mix-blend-mode:overlay;}
+
+/* 晕影呼吸 */
+#titleVig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 80% at 50% 46%,transparent 32%,rgba(0,0,0,.6) 82%,rgba(0,0,0,.92));
+  animation:vigBreath 9s ease-in-out infinite;}
+@keyframes vigBreath{0%,100%{opacity:.86}50%{opacity:1}}
+
+.title-content{position:relative;text-align:center;margin-bottom:110px;z-index:2;}
+
+/* 标题：像快烧坏的灯，分段闪现后稳定 */
+#title h1{color:var(--amber);font-size:56px;font-weight:600;letter-spacing:10px;
+  text-shadow:0 2px 14px #000,0 0 44px rgba(0,0,0,.95),0 0 60px rgba(180,110,40,.25);
+  opacity:0;animation:flickerIn 2.6s .3s forwards;}
+#title .subtitle{color:#9a9aa6;font-size:16px;letter-spacing:8px;margin-top:16px;
+  text-shadow:0 2px 10px #000,0 0 20px rgba(0,0,0,.9);
+  opacity:0;animation:fadeUp 1.6s 2.4s forwards;}
+#title .tagline{color:#a39e95;font-size:15px;margin-top:24px;letter-spacing:2px;
+  text-shadow:0 2px 10px #000,0 0 16px rgba(0,0,0,.95);
+  opacity:0;animation:fadeUp 1.6s 3.0s forwards;}
+@keyframes flickerIn{
+  0%{opacity:0}
+  8%{opacity:.9}12%{opacity:.1}18%{opacity:.85}24%{opacity:.2}
+  32%{opacity:1}40%{opacity:.45}48%{opacity:1}
+  62%{opacity:.85}70%{opacity:1}100%{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.version{position:absolute;left:16px;bottom:14px;color:#3f3c37;font-size:12px;letter-spacing:1px;z-index:2;}
+
+/* 开始按钮：锈蚀金属铭牌 + 缓慢呼吸辉光 */
+#startBtn{margin-top:34px;padding:15px 0;width:248px;font-family:var(--font);
+  font-size:19px;letter-spacing:8px;color:var(--brass);cursor:pointer;border-radius:2px;
+  background:linear-gradient(180deg,#2a2014,#140e07);
+  border:1px solid rgba(140,100,52,.6);
+  box-shadow:inset 0 1px 0 rgba(200,155,90,.18),inset 0 -2px 8px rgba(0,0,0,.6),0 6px 20px rgba(0,0,0,.6);
+  text-shadow:0 0 12px rgba(180,110,40,.4),0 1px 2px #000;
+  opacity:0;animation:fadeUp 1.6s 3.6s forwards, btnBreath 3.4s 5s ease-in-out infinite;}
+#startBtn:hover{color:#ecc47e;background:linear-gradient(180deg,#3a2c17,#1c130a);
+  box-shadow:inset 0 1px 0 rgba(200,155,90,.25),inset 0 -2px 8px rgba(0,0,0,.6),0 0 30px rgba(170,105,30,.55);
+  transform:translateY(-1px);animation:none;opacity:1;}
+#startBtn:active{transform:translateY(1px);box-shadow:inset 0 2px 10px rgba(0,0,0,.8);}
+@keyframes btnBreath{0%,100%{box-shadow:inset 0 1px 0 rgba(200,155,90,.18),inset 0 -2px 8px rgba(0,0,0,.6),0 6px 20px rgba(0,0,0,.6)}
+  50%{box-shadow:inset 0 1px 0 rgba(200,155,90,.22),inset 0 -2px 8px rgba(0,0,0,.6),0 0 26px rgba(160,100,30,.4)}}
 
 /* ===== 通用：右上角 ✕ 关闭（锈蚀金属铆钉）===== */
 .corner-close{position:absolute;top:10px;right:10px;width:32px;height:32px;
