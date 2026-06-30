@@ -262,9 +262,9 @@ function clickItem(id) {
         showPopup(OBJ + "cabinet_open.jpg", "金属柜 — 已打开",
           "柜门缓缓滑开。里面躺着一把黄铜钥匙，和一张褪色的照片——\n照片上的日期，竟然是明天。这怎么可能？");
       } else {
-        // 已取走钥匙：空柜子（等用户出 cabinet_empty.jpg 再换图，先纯文字）
+        // 已取走钥匙：空柜子（同角度侧光版，空挂钩对上"钥匙已拿走"）
         playSfx("click");
-        showPopup(null, "金属柜 — 已空",
+        showPopup(OBJ + "cabinet_empty.jpg", "金属柜 — 已空",
           "柜子空了。\n钥匙和那张照片，都被你拿走了。\n只剩锈迹，和一圈落灰的印子。");
       }
     } else {
