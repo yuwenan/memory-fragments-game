@@ -189,8 +189,8 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   background:
     linear-gradient(155deg,rgba(10,7,4,.34),rgba(5,3,2,.5)),
     url("assets/ui/panel_metal.jpg") center/100% 100% no-repeat;
-  width:620px;max-width:88vw;max-height:90vh;border:none;border-radius:4px;
-  padding:28px 40px 22px;overflow:hidden;
+  width:560px;max-width:1120px;max-height:646px;border:none;border-radius:4px;
+  padding:24px 38px 18px;overflow:hidden;
   display:flex;flex-direction:column;align-items:center;
   box-shadow:0 46px 110px rgba(0,0,0,.92),0 0 0 1px rgba(0,0,0,.85),
     inset 0 0 55px 3px rgba(0,0,0,.5);
@@ -204,12 +204,12 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 #popup.show .popup-card{transform:scale(1);}
 .popup-card h2{color:var(--brass);font-size:21px;letter-spacing:8px;font-weight:600;
   margin-bottom:18px;text-shadow:0 0 18px rgba(150,100,40,.5),0 2px 6px #000;}
-/* 图片：贴在铁牌上的一张照片，有限大小，暗框（不抢戏）*/
-.popup-img-wrap{width:auto;max-width:100%;height:auto;max-height:34vh;
+/* 图片：贴在铁牌上的一张照片，有限大小（px 相对720舞台，别用vh会被舞台缩放翻倍）*/
+.popup-img-wrap{width:auto;max-width:100%;height:auto;max-height:280px;
   border:1px solid rgba(0,0,0,.75);border-radius:2px;overflow:hidden;background:#040302;
   box-shadow:0 8px 22px rgba(0,0,0,.65),inset 0 0 0 1px rgba(150,110,60,.10);
   display:flex;justify-content:center;}
-#popupImg{max-width:100%;max-height:34vh;object-fit:contain;filter:contrast(1.03) saturate(.96);}
+#popupImg{max-width:440px;max-height:280px;object-fit:contain;filter:contrast(1.03) saturate(.96);}
 #popupDesc{color:var(--bone);font-size:16px;line-height:1.85;letter-spacing:1px;
   text-align:center;margin-top:18px;max-width:100%;white-space:pre-line;
   text-shadow:0 2px 6px #000;}
@@ -303,7 +303,7 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   background:radial-gradient(ellipse at center,rgba(0,0,0,.86),rgba(0,0,0,.96));
   backdrop-filter:blur(3px);opacity:0;transition:opacity .22s;}
 #memArchive.show{opacity:1;}
-.ma-panel{position:relative;width:560px;max-width:78vw;max-height:78vh;overflow-y:auto;
+.ma-panel{position:relative;width:560px;max-width:1100px;max-height:600px;overflow-y:auto;
   background:linear-gradient(160deg,var(--panel-2),var(--panel) 60%,#070504);
   border:1px solid rgba(110,80,44,.42);border-radius:3px;padding:26px 30px 22px;
   box-shadow:0 30px 90px rgba(0,0,0,.85),inset 0 0 70px rgba(0,0,0,.7),inset 0 0 0 2px rgba(120,88,48,.10);}
