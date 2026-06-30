@@ -125,6 +125,7 @@ const memFlash = $("#memFlash"), mfText = $("#mfText"), mfKicker = $("#mfKicker"
 const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBtn");
 const imgZoom = $("#imgZoom"), imgZoomImg = $("#imgZoomImg");
 const confirmBox = $("#confirmBox");
+const keyGlint = $("#keyGlint"), doorSeq = $("#doorSeq"), dsDoorImg = $("#dsDoorImg"), keySlot = $("#keySlot");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -159,6 +160,7 @@ function init() {
     if (hasSave()) showConfirm("已有存档——新游戏会覆盖上次的进度。\n确定重新开始？", newGame);
     else newGame();
   });
+  $("#dsBackBtn").addEventListener("click", () => location.reload());
   $("#confirmYes").addEventListener("click", () => { const cb = confirmCb; hideConfirm(); if (cb) cb(); });
   $("#confirmNo").addEventListener("click", hideConfirm);
   confirmBox.addEventListener("click", e => { if (e.target === confirmBox) hideConfirm(); });
@@ -260,9 +262,9 @@ function clickItem(id) {
       if (!state.hasKey) {
         state.hasKey = true; state.fragments++;
         state.memories.push("frag1");
-        state.pendingMemory = "frag1"; // 关闭弹窗后触发闪回
+        state.pendingMemory = "frag1"; // 关闭弹窗后：金光特写→闪回
+        pendingKeyGlint = true;
         updateHUD(); saveGame();
-        playSfx("clunk");
         showToast("获得：黄铜钥匙　+　第一段记忆碎片", 3200);
         showPopup(OBJ + "cabinet_open.jpg", "金属柜 — 已打开",
           "柜门缓缓滑开。里面躺着一把黄铜钥匙，和一张褪色的照片——\n照片上的日期，竟然是明天。这怎么可能？");
@@ -299,6 +301,14 @@ function clickItem(id) {
 function updateHUD() {
   clueStat.textContent = `线索　${state.clues.size} / 4`;
   fragStat.textContent = `碎片　${state.fragments} / 5`;
+  keySlot.classList.toggle("hidden", !state.hasKey);
+}
+// 拿钥匙金光特写（重启动画）
+function showKeyGlint() {
+  keyGlint.classList.add("hidden");
+  void keyGlint.offsetWidth; // 强制重排以重放动画
+  keyGlint.classList.remove("hidden");
+  setTimeout(() => keyGlint.classList.add("hidden"), 1850);
 }
 let toastTimer = null;
 function showToast(text, dur = 3000) {
@@ -319,9 +329,19 @@ function showPopup(img, title, desc) {
   popup.classList.remove("hidden");
   requestAnimationFrame(() => popup.classList.add("show"));
 }
+let pendingKeyGlint = false;
 function hidePopup() {
   popup.classList.remove("show");
   setTimeout(() => popup.classList.add("hidden"), 220);
+  if (pendingKeyGlint) { // 拿钥匙金光特写，之后再闪回
+    pendingKeyGlint = false;
+    setTimeout(() => { showKeyGlint(); playSfx("clunk"); }, 280);
+    if (state.pendingMemory) {
+      const id = state.pendingMemory; state.pendingMemory = null;
+      setTimeout(() => showMemory(MEMORIES[id]), 2000);
+    }
+    return;
+  }
   if (state.pendingMemory) {
     const id = state.pendingMemory; state.pendingMemory = null;
     setTimeout(() => showMemory(MEMORIES[id]), 320);
@@ -462,16 +482,17 @@ function confirmCode() {
 // ===== 通关 =====
 function winGame() {
   state.finished = true; saveGame();
-  playSfx("door");
-  const flash = document.createElement("div");
-  flash.id = "flash"; room.appendChild(flash);
-  requestAnimationFrame(() => { flash.style.opacity = "0.9"; });
-  setTimeout(() => { flash.style.opacity = "0"; }, 220);
-  setTimeout(() => {
-    showPopup(OBJ + "door.jpg", "门，开了",
-      "钥匙转动，铁门沉重地打开了。\n\n走廊里弥漫着同样的尘味，更深的黑暗在前方等待……\n\n—— 第一关「觉醒室」通关 ——");
-    flash.remove();
-  }, 360);
+  playDoorSeq();
+}
+// 开门推门过场：插钥匙→转动→推门露出黑暗走廊→通关字幕
+function playDoorSeq() {
+  dsDoorImg.src = OBJ + "door.jpg";
+  doorSeq.classList.remove("hidden", "turn", "swing", "ended");
+  requestAnimationFrame(() => doorSeq.classList.add("show"));
+  setTimeout(() => { doorSeq.classList.add("turn"); playSfx("keytap"); }, 800);   // 钥匙转动
+  setTimeout(() => playSfx("clunk"), 1450);                                        // 锁开
+  setTimeout(() => { doorSeq.classList.add("swing"); playSfx("door"); }, 1750);    // 推门
+  setTimeout(() => doorSeq.classList.add("ended"), 3700);                          // 通关字幕
 }
 
 // ===== 首屏电影级特效：浮尘 + 吊灯明灭 =====

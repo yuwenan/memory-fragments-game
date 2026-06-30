@@ -368,6 +368,49 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 @keyframes rotateHintSpin{0%,38%{transform:rotate(0)}58%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait) and (max-width:920px){#rotateHint{display:flex;}}
 
-/* 通关闪白 */
+/* HUD 钥匙标记 */
+#keySlot{display:flex;align-items:center;gap:6px;color:#d9b066;margin-top:3px;
+  text-shadow:0 1px 2px #000;}
+#keySlot.hidden{display:none;}
+#keySlot svg{filter:drop-shadow(0 0 4px rgba(180,120,40,.5));}
+
+/* 拿钥匙金光特写：钥匙旋亮放大，飞向左上HUD */
+#keyGlint{position:absolute;inset:0;z-index:78;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+#keyGlint svg{color:#f3cd82;filter:drop-shadow(0 0 26px rgba(243,205,130,.95));
+  animation:keyGet 1.8s ease-in-out forwards;}
+@keyframes keyGet{
+  0%{opacity:0;transform:scale(.4) rotate(-25deg)}
+  18%{opacity:1;transform:scale(1.3) rotate(0deg)}
+  55%{opacity:1;transform:scale(1.05) translate(0,0)}
+  100%{opacity:0;transform:scale(.16) translate(-46vw,-31vh)}}
+
+/* ===== 开门推门过场 ===== */
+#doorSeq{position:absolute;inset:0;z-index:85;background:#000;overflow:hidden;opacity:0;transition:opacity .6s;}
+#doorSeq.show{opacity:1;}
+.ds-void{position:absolute;inset:0;
+  background:radial-gradient(ellipse 52% 62% at 50% 48%,rgba(255,178,88,.24),rgba(120,70,30,.06) 45%,#000 76%),#000;}
+.ds-stage{position:absolute;inset:0;perspective:1400px;}
+.ds-door{position:absolute;inset:0;transform-origin:left center;transform-style:preserve-3d;
+  backface-visibility:hidden;will-change:transform;}
+#dsDoorImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.ds-key{position:absolute;left:37.5%;top:50%;transform:translate(-50%,-50%);color:#ecc170;
+  filter:drop-shadow(0 0 12px rgba(220,160,60,.85));}
+#doorSeq.turn .ds-key{animation:keyTurn .7s ease-in-out forwards;}
+@keyframes keyTurn{to{transform:translate(-50%,-50%) rotate(92deg)}}
+#doorSeq.swing .ds-key{opacity:0;transition:opacity .35s;}
+#doorSeq.swing .ds-door{animation:doorSwing 2.2s cubic-bezier(.55,.03,.3,1) forwards;}
+@keyframes doorSwing{0%{transform:rotateY(0)}100%{transform:rotateY(-110deg) translateZ(30px)}}
+.ds-end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;opacity:0;pointer-events:none;text-align:center;}
+#doorSeq.ended .ds-end{opacity:1;pointer-events:auto;transition:opacity 1.6s ease;}
+.ds-title{color:var(--brass);font-size:32px;letter-spacing:12px;font-weight:600;
+  text-shadow:0 0 24px rgba(150,100,40,.5),0 2px 8px #000;}
+.ds-sub{color:#a99e88;font-size:14.5px;line-height:2;letter-spacing:2px;text-shadow:0 2px 6px #000;}
+.ds-btn{margin-top:16px;padding:11px 30px;font-family:var(--font);font-size:14px;letter-spacing:5px;cursor:pointer;
+  color:var(--brass);border-radius:2px;background:linear-gradient(180deg,#2a2014,#140e07);
+  border:1px solid rgba(140,100,52,.6);box-shadow:inset 0 1px 0 rgba(200,155,90,.16);transition:color .18s,box-shadow .18s;}
+.ds-btn:hover{color:#ecc47e;box-shadow:0 0 22px rgba(160,100,30,.5);}
+
+/* 通关闪白（旧，保留无害）*/
 #flash{position:absolute;inset:0;z-index:90;background:#fff;opacity:0;pointer-events:none;
   transition:opacity .15s;}
