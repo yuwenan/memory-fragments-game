@@ -6,7 +6,11 @@
 const STAGE_W = 1280, STAGE_H = 720;
 const CODE = "7931"; // 顺着灯光从右往左读墙上四个刻痕
 
+const OBJ = "assets/objects/";
+const BG = "assets/backgrounds/";
+
 // ===== 记忆碎片文案（见 STORY.md）。玩家以为在「找回」，实则被录进镜像并删除 =====
+// 注意：必须放在 OBJ 声明之后，否则 const 暂时性死区会让整个脚本崩溃
 const MEMORIES = {
   frag1: {
     kicker: "记 忆 碎 片 · 01　觉醒室",
@@ -14,9 +18,6 @@ const MEMORIES = {
     text: "照片从柜子深处滑出来。\n相纸边角写着「研究区 B」，还有一个日期。\n照片里的人穿着白大褂，对着镜头淡淡地笑——\n那是你的脸。\n可你不记得，自己曾经站在那里。"
   },
 };
-
-const OBJ = "assets/objects/";
-const BG = "assets/backgrounds/";
 
 // 交互物件（坐标对齐 1280×720）
 const ITEMS = {
@@ -108,7 +109,7 @@ function toStage(cx, cy) {
 
 // ===== 启动 =====
 function init() {
-  titleEl.style.setProperty("--titlebg", `url("${BG}title_screen.jpg")`);
+  $("#titleBg").style.backgroundImage = `url("${BG}title_screen.jpg")`; // 直接设,别用CSS变量(相对url被子元素var()取用解析不到)
   bgLayer.style.backgroundImage = `url("${BG}room01_bg.jpg")`;
   resize();
   buildHotspots();

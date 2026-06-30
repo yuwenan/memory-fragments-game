@@ -99,7 +99,7 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 
 /* 走廊背景：缓慢推近（Ken Burns），往走廊深处暖光推 */
 #titleBg{position:absolute;inset:-4%;background:center/cover no-repeat;
-  background-image:var(--titlebg);transform-origin:50% 44%;
+  transform-origin:50% 44%;
   animation:kenburns 34s ease-in-out infinite alternate;}
 @keyframes kenburns{
   0%{transform:scale(1.02) translateY(0)}
@@ -127,11 +127,11 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   background-image:var(--grain-tex);background-size:140px;
   animation:grain .5s steps(4) infinite;mix-blend-mode:overlay;}
 
-/* 晕影呼吸 */
+/* 晕影呼吸（调淡，别把走廊压死）*/
 #titleVig{position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse 80% 80% at 50% 46%,transparent 32%,rgba(0,0,0,.6) 82%,rgba(0,0,0,.92));
+  background:radial-gradient(ellipse 105% 100% at 50% 45%,transparent 52%,rgba(0,0,0,.32) 84%,rgba(0,0,0,.62));
   animation:vigBreath 9s ease-in-out infinite;}
-@keyframes vigBreath{0%,100%{opacity:.86}50%{opacity:1}}
+@keyframes vigBreath{0%,100%{opacity:.7}50%{opacity:.85}}
 
 .title-content{position:relative;text-align:center;margin-bottom:110px;z-index:2;}
 
