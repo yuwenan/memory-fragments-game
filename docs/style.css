@@ -66,11 +66,11 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 .hotspot:hover{
   background:radial-gradient(ellipse 60% 60% at center,rgba(245,205,130,.13),rgba(245,190,100,.05) 45%,transparent 68%);}
 
+/* 贴着鼠标的发光文字标签——不是按钮：无底板无边框，靠多层描边在任何背景上清晰 */
 #hoverLabel{position:absolute;z-index:40;pointer-events:none;display:none;
-  padding:5px 13px;border-radius:2px;font-size:14px;letter-spacing:2px;color:var(--brass);
-  background:linear-gradient(180deg,rgba(18,13,8,.94),rgba(8,6,4,.94));
-  border:1px solid rgba(110,80,44,.45);text-shadow:0 1px 2px #000;
-  box-shadow:0 4px 14px rgba(0,0,0,.6),inset 0 1px 0 rgba(170,130,70,.1);white-space:nowrap;}
+  padding:2px 4px;font-size:16px;letter-spacing:4px;color:var(--brass);white-space:nowrap;
+  background:none;border:none;box-shadow:none;
+  text-shadow:0 0 6px rgba(0,0,0,.98),0 0 10px rgba(0,0,0,.95),0 2px 4px #000,0 0 18px rgba(160,105,40,.45);}
 
 /* ===== HUD（锈蚀铭牌）===== */
 #statusPlate{position:absolute;left:16px;top:14px;z-index:30;
@@ -187,9 +187,10 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 #popup.show{opacity:1;}
 .popup-card{position:relative;
   background:
-    radial-gradient(ellipse 120% 80% at 50% 0%,rgba(70,46,20,.16),transparent 60%),
-    linear-gradient(160deg,var(--panel-2),var(--panel) 60%,#070504);
-  border:1px solid rgba(110,80,44,.42);border-radius:3px;
+    linear-gradient(160deg,rgba(11,8,5,.70),rgba(6,4,3,.82) 70%,rgba(4,3,2,.86)),
+    radial-gradient(ellipse 120% 80% at 50% 0%,rgba(80,52,22,.16),transparent 60%),
+    url("assets/ui/panel_metal.jpg") center/100% 100% no-repeat;
+  border:1px solid rgba(110,80,44,.5);border-radius:3px;
   padding:24px 30px 20px;max-width:720px;max-height:660px;
   display:flex;flex-direction:column;align-items:center;
   box-shadow:0 30px 90px rgba(0,0,0,.85),
@@ -244,7 +245,9 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   backdrop-filter:blur(3px);opacity:0;transition:opacity .2s;}
 #keypad.show{opacity:1;}
 .keypad-panel{position:relative;width:300px;padding:24px 22px 22px;
-  background:linear-gradient(165deg,#171109,#0c0805 70%,#070403);
+  background:
+    linear-gradient(165deg,rgba(16,11,7,.72),rgba(8,5,3,.85) 70%,rgba(5,3,2,.88)),
+    url("assets/ui/panel_metal.jpg") center/100% 100% no-repeat;
   border:1px solid rgba(110,80,44,.5);border-radius:3px;
   box-shadow:0 28px 70px rgba(0,0,0,.82),inset 0 0 50px rgba(0,0,0,.7),
     inset 0 0 0 2px rgba(120,88,48,.10);
