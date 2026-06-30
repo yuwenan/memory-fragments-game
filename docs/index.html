@@ -37,6 +37,17 @@
       </button>
     </div>
 
+    <!-- 自写确认弹窗 -->
+    <div id="confirmBox" class="hidden">
+      <div class="confirm-card">
+        <p id="confirmText"></p>
+        <div class="confirm-btns">
+          <button id="confirmYes">确 定</button>
+          <button id="confirmNo">取 消</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 记忆闪回 -->
     <div id="memFlash" class="hidden">
       <div class="mf-static"></div>
@@ -74,7 +85,10 @@
         <h1>记 忆 碎 片</h1>
         <div class="subtitle">M E M O R Y　F R A G M E N T S</div>
         <p class="tagline">在一个废弃研究所醒来，你的记忆是唯一的钥匙。</p>
-        <button id="startBtn">开 始 游 戏</button>
+        <div class="title-buttons">
+          <button id="continueBtn" class="title-btn hidden">继 续 游 戏</button>
+          <button id="newBtn" class="title-btn">新 游 戏</button>
+        </div>
       </div>
       <div class="version">v0.2 · Room 01 — 觉醒室</div>
     </div>
