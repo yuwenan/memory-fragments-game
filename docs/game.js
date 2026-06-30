@@ -115,8 +115,6 @@ function init() {
   initTitleFX();
 
   $("#startBtn").addEventListener("click", startGame);
-  $("#popupClose").addEventListener("click", hidePopup);
-  $("#popupCornerClose").addEventListener("click", hidePopup);
   popup.addEventListener("click", e => { if (e.target === popup) hidePopup(); });
   $("#kpClose").addEventListener("click", hideKeypad);
   keypad.addEventListener("click", e => { if (e.target === keypad) hideKeypad(); });
