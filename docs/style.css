@@ -60,14 +60,11 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 
 /* ===== 热点 ===== */
 #hotspots{position:absolute;inset:0;}
-.hotspot{position:absolute;cursor:pointer;border-radius:14px;
-  transition:box-shadow .25s, background .25s;}
+/* 无边框、无方块：悬停只给一层柔和暖光（边缘渐隐看不出矩形）+ 浮标签 */
+.hotspot{position:absolute;cursor:pointer;background:transparent;
+  transition:background .3s ease;}
 .hotspot:hover{
-  background:radial-gradient(ellipse at center,rgba(245,199,114,.12),transparent 70%);
-  box-shadow:0 0 0 1px rgba(245,199,114,.25) inset,0 0 26px rgba(245,199,114,.18);
-  animation:hsPulse 1.8s ease-in-out infinite;}
-@keyframes hsPulse{0%,100%{box-shadow:0 0 0 1px rgba(245,199,114,.22) inset,0 0 18px rgba(245,199,114,.12)}
-  50%{box-shadow:0 0 0 1px rgba(245,199,114,.35) inset,0 0 34px rgba(245,199,114,.26)}}
+  background:radial-gradient(ellipse 60% 60% at center,rgba(245,205,130,.13),rgba(245,190,100,.05) 45%,transparent 68%);}
 
 #hoverLabel{position:absolute;z-index:40;pointer-events:none;display:none;
   padding:5px 13px;border-radius:2px;font-size:14px;letter-spacing:2px;color:var(--brass);

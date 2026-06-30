@@ -41,6 +41,28 @@ const ITEMS = {
   },
   cabinet: { name: "金属柜", x: 30, y: 90, w: 240, h: 450 }, // 点击弹密码盘
   door: { name: "出口门", x: 1120, y: 95, w: 160, h: 460 },
+
+  // ===== 可检视物：纯环境叙事，不计线索/碎片，处处复读 7931，埋镜像计划的种子 =====
+  rules: {
+    name: "守则牌", x: 300, y: 185, w: 90, h: 130, lore: true,
+    desc: "墙上钉着一张褪色的守则：\n\n1. Silence　保持安静\n2. Obey　　服从\n3. Record　记录\n4. Forget　遗忘\n\n前三条你认。可第四条「遗忘」——\n谁会把「忘记」当成一条规定，写下来逼一个人去做？"
+  },
+  chisel: {
+    name: "刻刀", x: 500, y: 398, w: 125, h: 32, lore: true,
+    desc: "纸张间压着一片磨得发亮的金属，边缘卷了刃，还沾着灰白的墙屑。\n\n墙上那个 7931，就是用它一笔一笔刻进石头的。\n笔迹是你的。\n可你不记得——自己什么时候、为什么要刻下它。"
+  },
+  mug: {
+    name: "搪瓷杯", x: 350, y: 375, w: 62, h: 55, lore: true,
+    desc: "一只缺了口的搪瓷杯，杯底结着早已干透的褐色残渍。\n\n杯壁上有人用记号笔写了个编号——7931。\n和你的，一样。"
+  },
+  blueprint: {
+    name: "墙上蓝图", x: 685, y: 185, w: 120, h: 115, lore: true,
+    desc: "一张钉在墙上的蓝图，线条像建筑结构，又像……某种神经的接线图。\n\n角落印着一行小字：「镜像计划 · 意识备份流程」。\n你盯着它，莫名一阵心悸，却想不起为什么。"
+  },
+  chart: {
+    name: "病历夹", x: 1140, y: 278, w: 75, h: 95, lore: true,
+    desc: "墙上挂着一块夹板，夹着一页脆黄的病历。\n\n姓名一栏被人用力划掉了，只剩编号：7931。\n状态一栏写着两个字——「待提取」。"
+  },
 };
 
 // ===== 游戏状态 =====
@@ -202,7 +224,9 @@ function showToast(text, dur = 3000) {
 // ===== 弹窗 =====
 function showPopup(img, title, desc) {
   hoverLabel.style.display = "none";
-  popupImg.src = img;
+  const wrap = popupImg.parentElement; // .popup-img-wrap
+  if (img) { popupImg.src = img; wrap.style.display = ""; }
+  else { popupImg.removeAttribute("src"); wrap.style.display = "none"; } // 检视物纯文字
   popupTitle.textContent = title;
   popupDesc.textContent = desc;
   popup.classList.remove("hidden");
