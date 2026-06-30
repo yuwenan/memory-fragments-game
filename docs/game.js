@@ -145,7 +145,7 @@ function toStage(cx, cy) {
 // ===== 启动 =====
 function init() {
   $("#titleBg").style.backgroundImage = `url("${BG}title_screen.jpg")`; // 直接设,别用CSS变量(相对url被子元素var()取用解析不到)
-  bgLayer.style.backgroundImage = `url("${BG}room01_bg.jpg")`;
+  updateRoomBg();
   resize();
   buildHotspots();
   buildKeypad();
@@ -186,6 +186,11 @@ function init() {
   });
 }
 
+// 房间状态背景：解开柜子后切到开柜版
+function updateRoomBg() {
+  const img = state.cabinetSolved ? "room01_bg_open.jpg" : "room01_bg.jpg";
+  bgLayer.style.backgroundImage = `url("${BG}${img}")`;
+}
 function newGame() { clearSave(); resetState(); enterRoom(true); }
 function continueGame() { applySave(loadSave()); enterRoom(false); }
 function enterRoom(isNew) {
@@ -198,7 +203,7 @@ function enterRoom(isNew) {
     room.style.opacity = "0";
     room.style.transition = "opacity 1.1s ease";
     requestAnimationFrame(() => { room.style.opacity = "1"; });
-    updateHUD();
+    updateHUD(); updateRoomBg(); // 继续游戏时反映柜子是否已开
     const msg = isNew ? "你在一间陌生的房间醒来……没有记忆。" : "你又回到了这里。";
     setTimeout(() => showToast(msg, 4200), 700);
   }, 800);
@@ -439,6 +444,7 @@ function confirmCode() {
   if (state.input === CODE) {
     state.cabinetSolved = true;
     saveGame();
+    updateRoomBg(); // 柜门打开，房间底图切到开柜版
     playSfx("clunk");
     hideKeypad();
     showToast("咔哒——锁开了。柜门缓缓滑开，里面似乎有东西……", 4000);
