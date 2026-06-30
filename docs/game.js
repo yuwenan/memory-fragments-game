@@ -49,11 +49,11 @@ const ITEMS = {
   },
   chisel: {
     name: "刻刀", x: 500, y: 398, w: 125, h: 32, lore: true,
-    desc: "纸张间压着一片磨得发亮的金属，边缘卷了刃，还沾着灰白的墙屑。\n\n墙上那个 7931，就是用它一笔一笔刻进石头的。\n笔迹是你的。\n可你不记得——自己什么时候、为什么要刻下它。"
+    desc: "纸张间压着一片磨得发亮的金属，边缘卷了刃，还沾着灰白的墙屑。\n\n墙上那串刻痕，就是用它一笔一笔刻进石头的。\n笔迹是你的。\n可你不记得——自己什么时候、为什么要刻下它。"
   },
   mug: {
     name: "搪瓷杯", x: 350, y: 375, w: 62, h: 55, lore: true,
-    desc: "一只缺了口的搪瓷杯，杯底结着早已干透的褐色残渍。\n\n杯壁上有人用记号笔写了个编号——7931。\n和你的，一样。"
+    desc: "一只缺了口的搪瓷杯，杯底结着早已干透的褐色残渍。\n\n杯壁上有人用记号笔写了个编号——\n和墙上刻的那串一模一样。\n也和你的，一样。"
   },
   blueprint: {
     name: "墙上蓝图", x: 685, y: 185, w: 120, h: 115, lore: true,
@@ -61,7 +61,7 @@ const ITEMS = {
   },
   chart: {
     name: "病历夹", x: 1140, y: 278, w: 75, h: 95, lore: true,
-    desc: "墙上挂着一块夹板，夹着一页脆黄的病历。\n\n姓名一栏被人用力划掉了，只剩编号：7931。\n状态一栏写着两个字——「待提取」。"
+    desc: "墙上挂着一块夹板，夹着一页脆黄的病历。\n\n姓名一栏被人用力划掉了，只剩一个编号。\n状态一栏写着两个字——「待提取」。"
   },
 };
 
@@ -96,6 +96,7 @@ function resize() {
   rect = stage.getBoundingClientRect();
 }
 window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", () => setTimeout(resize, 100));
 
 // client 坐标 → 舞台坐标
 function toStage(cx, cy) {

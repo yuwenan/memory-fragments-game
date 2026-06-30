@@ -313,6 +313,15 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 #fragStat{cursor:pointer;transition:color .18s;}
 #fragStat:hover{color:var(--brass);}
 
+/* ===== 手机竖屏：请横屏 ===== */
+#rotateHint{position:fixed;inset:0;z-index:200;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  background:#050403;color:var(--brass);font-family:var(--font);text-align:center;
+  font-size:18px;line-height:1.9;letter-spacing:3px;text-shadow:0 2px 8px #000;}
+#rotateHint svg{animation:rotateHintSpin 2.6s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(150,100,40,.4));}
+@keyframes rotateHintSpin{0%,38%{transform:rotate(0)}58%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (max-width:920px){#rotateHint{display:flex;}}
+
 /* 通关闪白 */
 #flash{position:absolute;inset:0;z-index:90;background:#fff;opacity:0;pointer-events:none;
   transition:opacity .15s;}
