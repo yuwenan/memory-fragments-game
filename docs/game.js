@@ -475,9 +475,34 @@ function playSfx(type) {
     case "keytap":sfxTone(175, "square", 0.05, 0.12, 0.002); sfxNoise(0.03, 0.12, "lowpass", 1200); break;
     case "clunk": sfxTone(80, "sine", 0.4, 0.32); sfxNoise(0.14, 0.2, "lowpass", 380); break;
     case "buzz":  sfxTone(110, "sawtooth", 0.38, 0.18); sfxTone(117, "sawtooth", 0.35, 0.11); break;
-    case "door":  sfxTone(52, "sawtooth", 1.3, 0.18); sfxNoise(0.95, 0.1, "lowpass", 340); break;
+    case "door":  playDoorCreak(); break;
     default:      sfxNoise(0.045, 0.16, "bandpass", 2200, 1); // click
   }
+}
+// 生锈铰链吱嘎呻吟 + 门到位闷响（中频，喇叭放得出来）
+function playDoorCreak() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type = "sawtooth";
+  o.frequency.setValueAtTime(260, t);
+  o.frequency.exponentialRampToValueAtTime(95, t + 1.1);
+  const f = audioCtx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 520; f.Q.value = 5;
+  const lfo = audioCtx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 12;
+  const lg = audioCtx.createGain(); lg.gain.value = 70;
+  lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(t + 1.2);
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.18, t + 0.08);
+  g.gain.exponentialRampToValueAtTime(0.002, t + 1.15);
+  o.connect(f); f.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + 1.2);
+  // 收尾：门撞到位的闷响
+  const t2 = t + 1.0;
+  const th = audioCtx.createOscillator(); th.type = "sine"; th.frequency.value = 72;
+  const tg = audioCtx.createGain();
+  tg.gain.setValueAtTime(0.0001, t2);
+  tg.gain.linearRampToValueAtTime(0.3, t2 + 0.02);
+  tg.gain.exponentialRampToValueAtTime(0.001, t2 + 0.45);
+  th.connect(tg); tg.connect(sfxGain); th.start(t2); th.stop(t2 + 0.5);
 }
 function initAmbient() {
   if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); return; }
