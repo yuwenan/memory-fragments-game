@@ -127,6 +127,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { Reflector } from "three/addons/objects/Reflector.js";
 
 const $ = s => document.querySelector(s);
 const canvas = $("#c3d");
@@ -291,10 +292,16 @@ function mirrorGrime(){
 }
 const selfTex = texL.load("./assets/characters/mirror_self.png"); selfTex.colorSpace = THREE.SRGBColorSpace;
 const CY = MIR_H/2 + 0.12;                 // 镜子竖直中心
-// 暗背板（在最里）
-const backing = new THREE.Mesh(new THREE.PlaneGeometry(MIR_W, MIR_H),
-  new THREE.MeshBasicMaterial({ color:0x05060a })); backing.position.set(0, CY, MIR_Z-0.06); scene.add(backing);
-// 镜中人（正面立绘），在背板前、玻璃后
+// 真反射镜面（照出走廊/吊灯/手电）——这才让它像镜子
+const reflector = new Reflector(new THREE.PlaneGeometry(MIR_W, MIR_H), {
+  textureWidth: 1024, textureHeight: 1024, color: 0x3a4048, clipBias: 0.003 });
+reflector.position.set(0, CY, MIR_Z-0.05); scene.add(reflector);
+// 反射渲染时把「镜中人」和脏雾藏掉，避免被镜面二次反射出鬼影
+reflector.onBeforeRender = (function(orig){ return function(r,s,c){
+  const a=selfFig.visible, b=glass.visible; selfFig.visible=false; glass.visible=false;
+  orig.call(this,r,s,c); selfFig.visible=a; glass.visible=b;
+}; })(reflector.onBeforeRender);
+// 镜中人（正面立绘），叠在反射前、玻璃后 = 你的「倒影」站在镜子里
 const selfMat = new THREE.MeshBasicMaterial({ map:selfTex, transparent:true, opacity:0.1, depthWrite:false, color:0x8a97a6 });
 const selfFig = new THREE.Mesh(new THREE.PlaneGeometry(MIR_W*0.9, MIR_H*0.95), selfMat);
 selfFig.position.set(0, MIR_H*0.485+0.12, MIR_Z-0.03); scene.add(selfFig);
@@ -461,9 +468,9 @@ function frame(){
   }
   // 镜子：进度→清晰（脏雾渐退、镜中人渐显）
   mirror.clarity += (mirror.progress - mirror.clarity) * Math.min(1, dt*1.8);
-  selfMat.opacity = 0.1 + 0.9*mirror.clarity;
+  selfMat.opacity = 0.08 + 0.92*mirror.clarity;
   const cc = 0.5 + 0.5*mirror.clarity; selfMat.color.setRGB(cc*0.88, cc*0.95, cc);
-  grimeMat.opacity = 0.9 - 0.66*mirror.clarity;
+  grimeMat.opacity = 0.62 - 0.5*mirror.clarity;   // murky 也留三成反射透出=像脏镜子
   mglow.intensity = 0.9 + 0.9*mirror.clarity;
   updatePrompt();
   composer.render();
