@@ -521,70 +521,82 @@ function playExit() {
   setTimeout(enterCorridor, 2850);
 }
 
-// 走廊三扇亮门（颜色暗示门后世界；房间内容待建）。热点矩形 + 进门占位文案
+// 走廊三扇亮门（颜色暗示门后世界；房间内容待建）。热点矩形（点击）+ 地面坐标(u,v) + 进门占位文案
+// u：0=贴左墙 → 1=贴右墙；v：0=最近（画面底、最大）→ 1=最远（灭点、最小）。对齐底图上三处门缝地面光晕
 const CORR_DOORS = {
-  warm:  { name: "透着暖光的门", rect: { x: 78, y: 86, w: 214, h: 356 },
+  warm:  { name: "透着暖光的门", rect: { x: 78, y: 86, w: 214, h: 356 }, u: 0.02, v: 0.35,
     stub: "门缝下透出暖黄的光，像谁家亮着的客厅。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
-  pixel: { name: "透着幽蓝的门", rect: { x: 420, y: 198, w: 84, h: 246 },
+  pixel: { name: "透着幽蓝的门", rect: { x: 420, y: 198, w: 84, h: 246 }, u: 0.03, v: 0.84,
     stub: "门缝下渗出幽蓝的光，一闪一闪，像老式屏幕。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
-  cold:  { name: "透着冷光的门", rect: { x: 805, y: 202, w: 88, h: 238 },
+  cold:  { name: "透着冷光的门", rect: { x: 805, y: 202, w: 88, h: 238 }, u: 0.97, v: 0.84,
     stub: "门缝下淌出一线惨白的冷光，让人脊背发凉。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
 };
 
-// ===== 玩家操控走动：地面「轨道」按位置 p(0→1) 从左到右采样脚点(x,y)与缩放 s =====
-// 标了 door 的关键点=门口；越靠画面两侧越近越大，越往中后景越小（贴合走廊透视）
-const RAIL = [
-  { p: 0.00, x: 150,  y: 606, s: .52 },
-  { p: 0.15, x: 205,  y: 598, s: .52, door: "warm"  },
-  { p: 0.40, x: 442,  y: 478, s: .34, door: "pixel" },
-  { p: 0.60, x: 650,  y: 516, s: .40 },
-  { p: 0.82, x: 846,  y: 470, s: .34, door: "cold"  },
-  { p: 1.00, x: 1055, y: 594, s: .50 },
-];
+// ===== 2.5D 地面：手绘走廊图里的一块透视梯形。(u,v) → 脚点屏幕坐标(x,y)+缩放 s =====
+const FLOOR = {
+  yNear: 692, yFar: 430,        // 近（画面底）/ 远（灭点）的脚点 y
+  nearL: 140, nearR: 1140,      // 近处地面左右边（宽）
+  farL: 560,  farR: 726,        // 远处地面左右边（窄，收向灭点）
+  sNear: 0.60, sFar: 0.16,      // 近大远小
+};
 const HERO_BASE_X = 553 + 175 / 2, HERO_BASE_Y = 392 + 300; // .hero-clip 脚点 (640.5, 692)
-const WALK_SPEED = 0.46;   // 每秒走过的 p
-const DOOR_NEAR = 0.055;   // 距门口多近弹「进入」
+const U_SPEED = 0.52, V_SPEED = 0.42;   // 每秒走过的 u / v
+const clamp01 = n => Math.max(0, Math.min(1, n));
 
-function sampleRail(p) {
-  p = Math.max(0, Math.min(1, p));
-  for (let i = 0; i < RAIL.length - 1; i++) {
-    const a = RAIL[i], b = RAIL[i + 1];
-    if (p <= b.p) {
-      const t = (p - a.p) / ((b.p - a.p) || 1);
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: a.s + (b.s - a.s) * t };
-    }
-  }
-  const l = RAIL[RAIL.length - 1];
-  return { x: l.x, y: l.y, s: l.s };
+function floorPos(u, v) {
+  u = clamp01(u); v = clamp01(v);
+  const y = FLOOR.yNear + (FLOOR.yFar - FLOOR.yNear) * v;
+  const lx = FLOOR.nearL + (FLOOR.farL - FLOOR.nearL) * v;
+  const rx = FLOOR.nearR + (FLOOR.farR - FLOOR.nearR) * v;
+  const x = lx + (rx - lx) * u;
+  const s = FLOOR.sNear + (FLOOR.sFar - FLOOR.sNear) * v;
+  return { x, y, s };
 }
-function nearestDoor(p) {
-  let best = null, bd = DOOR_NEAR;
-  for (const kf of RAIL) {
-    if (!kf.door) continue;
-    const d = Math.abs(p - kf.p);
-    if (d < bd) { bd = d; best = kf; }
+function screenToFloor(sx, sy) {   // 屏幕（舞台坐标）→ 地面(u,v)，给点地面走
+  let v = clamp01((sy - FLOOR.yNear) / (FLOOR.yFar - FLOOR.yNear));
+  const lx = FLOOR.nearL + (FLOOR.farL - FLOOR.nearL) * v;
+  const rx = FLOOR.nearR + (FLOOR.farR - FLOOR.nearR) * v;
+  return { u: clamp01((sx - lx) / (rx - lx)), v };
+}
+function nearestDoor(u, v) {
+  let best = null, bd = 0.17;
+  for (const id in CORR_DOORS) {
+    const d = CORR_DOORS[id];
+    const dist = Math.hypot((u - d.u) * 0.85, (v - d.v) * 1.15); // v 方向更敏感些
+    if (dist < bd) { bd = dist; best = { id, d }; }
   }
   return best;
 }
+// 背影精灵：往深处（背对镜头）为正；dir 只做左右镜像的姿态提示
 function placeHero(x, y, s, dir) {
   hero.style.transform = `translate(${x - HERO_BASE_X}px,${y - HERO_BASE_Y}px) scale(${s}) scaleX(${dir})`;
 }
 
-// 走廊操控状态
-const corr = { on: false, p: 0.60, dir: 1, left: false, right: false, target: null, raf: null, last: 0, atDoor: null, entering: false };
+// 走廊操控状态：u/v = 地面坐标；up/down/left/right = 按键；target = 点地面/点门自动走
+const corr = { on: false, u: 0.5, v: 0.10, dir: 1, up: false, down: false, left: false, right: false,
+  target: null, raf: null, last: 0, atDoor: null, entering: false, boundClick: false };
 
 function enterCorridor() {
   initAmbient();
   room.classList.add("hidden");
   exitSeq.classList.add("hidden"); exitSeq.classList.remove("go");
   titleEl.classList.add("hidden");
-  // 复位操控
   if (corr.raf) cancelAnimationFrame(corr.raf);
-  Object.assign(corr, { on: false, p: 0.60, dir: 1, left: false, right: false, target: null, raf: null, last: 0, atDoor: null, entering: false });
+  Object.assign(corr, { on: false, u: 0.5, v: 0.10, dir: 1, up: false, down: false, left: false, right: false,
+    target: null, raf: null, last: 0, atDoor: null, entering: false, boundClick: corr.boundClick });
   corridor.classList.remove("walking");
   roomStub.classList.remove("show"); roomStub.classList.add("hidden");
   hideDoorPrompt();
   buildCorridorDoors();
+  // 点地面走（触屏 & 桌面都可）——只绑一次
+  if (!corr.boundClick) {
+    corr.boundClick = true;
+    corridor.addEventListener("click", e => {
+      if (!corr.on || corr.entering) return;
+      const p = toStage(e.clientX, e.clientY);
+      corr.target = screenToFloor(p.x, p.y);
+    });
+  }
   // 起手：站在走廊口的大特写
   hero.style.transition = "none";
   placeHero(HERO_BASE_X, HERO_BASE_Y, 1, 1);
@@ -594,16 +606,16 @@ function enterCorridor() {
   corridor.classList.remove("hidden");
   corridor.style.opacity = "0"; corridor.style.transition = "opacity 1.4s ease";
   requestAnimationFrame(() => { corridor.style.opacity = "1"; });
-  // 走进走廊 → 把操控交给玩家
+  // 走进走廊 → 交出操控
   setTimeout(() => {
     hero.style.transition = "transform 1.15s ease";
     corridor.classList.add("walking");
-    const c = sampleRail(0.60); placeHero(c.x, c.y, c.s, 1);
+    const c = floorPos(corr.u, corr.v); placeHero(c.x, c.y, c.s, 1);
     playSfx("cloth");
     setTimeout(() => {
       corridor.classList.remove("walking");
       hero.style.transition = "none";
-      corrHint.textContent = "← → 走动（或点门）· 走到发光的门前，按 E 进入";
+      corrHint.textContent = "WASD / 方向键 上下左右走动（或点地面/点门）· 走到发光的门前按 E 进入";
       corr.on = true; corr.last = 0;
       corr.raf = requestAnimationFrame(corrTick);
     }, 1200);
@@ -620,46 +632,51 @@ function buildCorridorDoors() {
     el.style.width = r.w + "px"; el.style.height = r.h + "px";
     el.addEventListener("mouseenter", () => { hoverLabel.textContent = CORR_DOORS[id].name; hoverLabel.style.display = "block"; });
     el.addEventListener("mouseleave", () => { hoverLabel.style.display = "none"; });
-    el.addEventListener("click", () => {          // 点门=自动走过去（触屏友好），到位再按 E / 点提示进入
+    el.addEventListener("click", e => {          // 点门=走到门口（触屏友好），到位再按 E / 点提示进入
+      e.stopPropagation();
       if (!corr.on || corr.entering) return;
-      const kf = RAIL.find(k => k.door === id);
-      if (kf) corr.target = kf.p;
+      corr.target = { u: CORR_DOORS[id].u, v: CORR_DOORS[id].v };
     });
     corrHotspots.appendChild(el);
   }
 }
 
-// 每帧推进：读操控 → 移动 p → 摆放角色 → 门口检测
+// 每帧推进：读操控 → 在地面上移动 u/v → 摆放角色 → 门口检测
 function corrTick(ts) {
   corr.raf = requestAnimationFrame(corrTick);
   if (!corr.on) return;
   if (!corr.last) corr.last = ts;
   const dt = Math.min(0.05, (ts - corr.last) / 1000); corr.last = ts;
 
-  let move = 0;
-  if (corr.target != null) {
-    const d = corr.target - corr.p;
-    if (Math.abs(d) < 0.005) { corr.p = corr.target; corr.target = null; }
-    else move = Math.sign(d);
+  let mu = 0, mv = 0;
+  if (corr.target) {
+    mu = corr.target.u - corr.u; mv = corr.target.v - corr.v;
+    if (Math.hypot(mu, mv) < 0.02) corr.target = null;
   } else {
-    if (corr.left) move -= 1;
-    if (corr.right) move += 1;
+    if (corr.left) mu -= 1;
+    if (corr.right) mu += 1;
+    if (corr.up) mv += 1;    // ↑/W = 往走廊深处（背对镜头）
+    if (corr.down) mv -= 1;  // ↓/S = 往镜头方向
   }
+  const mag = Math.hypot(mu, mv);
+  const moving = mag > 0.001 && !corr.entering;
 
-  if (move !== 0 && !corr.entering) {
-    corr.p = Math.max(0, Math.min(1, corr.p + move * WALK_SPEED * dt));
-    corr.dir = move > 0 ? 1 : -1;
+  if (moving) {
+    mu /= mag; mv /= mag;
+    corr.u = clamp01(corr.u + mu * U_SPEED * dt);
+    corr.v = clamp01(corr.v + mv * V_SPEED * dt);
+    if (Math.abs(mu) > 0.2) corr.dir = mu > 0 ? 1 : -1;  // 明显左右移动才翻转姿态
     corridor.classList.add("walking");
   } else {
     corridor.classList.remove("walking");
   }
 
-  const c = sampleRail(corr.p);
+  const c = floorPos(corr.u, corr.v);
   placeHero(c.x, c.y, c.s, corr.dir);
 
-  // 门口检测：进/出门框时切换提示
-  const nd = nearestDoor(corr.p);
-  if (nd !== corr.atDoor) {
+  // 门口检测
+  const nd = nearestDoor(corr.u, corr.v);
+  if ((nd && nd.id) !== (corr.atDoor && corr.atDoor.id)) {
     corr.atDoor = nd;
     if (nd && !corr.entering) showDoorPrompt(nd, c); else hideDoorPrompt();
   } else if (nd) {
@@ -667,10 +684,10 @@ function corrTick(ts) {
   }
 }
 
-function showDoorPrompt(kf, c) {
-  doorPrompt.textContent = "按 E 进入 · " + CORR_DOORS[kf.door].name;
-  doorPrompt.dataset.door = kf.door;
-  positionDoorPrompt(c || sampleRail(corr.p));
+function showDoorPrompt(nd, c) {
+  doorPrompt.textContent = "按 E 进入 · " + nd.d.name;
+  doorPrompt.dataset.door = nd.id;
+  positionDoorPrompt(c || floorPos(corr.u, corr.v));
   doorPrompt.classList.add("show");
 }
 function positionDoorPrompt(c) {
@@ -683,11 +700,11 @@ function hideDoorPrompt() {
 }
 function tryEnterDoor() {
   if (!corr.on || corr.entering) return;
-  if (corr.atDoor) enterDoor(corr.atDoor.door);
+  if (corr.atDoor) enterDoor(corr.atDoor.id);
 }
 function enterDoor(id) {
   corr.entering = true;
-  corr.left = corr.right = false; corr.target = null;
+  corr.up = corr.down = corr.left = corr.right = false; corr.target = null;
   corridor.classList.remove("walking");
   hideDoorPrompt();
   playSfx("door");
@@ -701,18 +718,22 @@ function backToCorridor() {
   setTimeout(() => { corr.entering = false; corr.last = 0; corr.atDoor = null; }, 500);
 }
 
-// 键盘 / 触屏操控（走廊里生效）
+// 键盘操控（走廊里生效）：WASD / 方向键 上下左右
 function corrKeyDown(e) {
   if (corridor.classList.contains("hidden") || !corr.on) return;
   const k = e.key;
   if (k === "ArrowLeft" || k === "a" || k === "A") { corr.left = true; corr.target = null; e.preventDefault(); }
   else if (k === "ArrowRight" || k === "d" || k === "D") { corr.right = true; corr.target = null; e.preventDefault(); }
+  else if (k === "ArrowUp" || k === "w" || k === "W") { corr.up = true; corr.target = null; e.preventDefault(); }
+  else if (k === "ArrowDown" || k === "s" || k === "S") { corr.down = true; corr.target = null; e.preventDefault(); }
   else if (k === "e" || k === "E" || k === "Enter" || k === " ") { tryEnterDoor(); e.preventDefault(); }
 }
 function corrKeyUp(e) {
   const k = e.key;
   if (k === "ArrowLeft" || k === "a" || k === "A") corr.left = false;
   else if (k === "ArrowRight" || k === "d" || k === "D") corr.right = false;
+  else if (k === "ArrowUp" || k === "w" || k === "W") corr.up = false;
+  else if (k === "ArrowDown" || k === "s" || k === "S") corr.down = false;
 }
 // 开门推门过场：插钥匙→转动→推门露出黑暗走廊→通关字幕
 function playDoorSeq() {
