@@ -196,6 +196,12 @@ const DW = 1.4, DH = 2.6, doorObjs = [];
 // 共用材质：锈铁门板 / 深色金属件
 const doorMetal = new THREE.MeshStandardMaterial({ color:0x3a332c, roughness:.52, metalness:.8 });
 const boltMetal = new THREE.MeshStandardMaterial({ color:0x22201c, roughness:.5, metalness:.85 });
+// 软径向光晕贴图（中心亮→边缘透明），代替死板的纯色方块
+const GLOW = (()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=128; const x=cv.getContext("2d");
+  const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,"rgba(255,255,255,1)");
+  g.addColorStop(.45,"rgba(255,255,255,.42)"); g.addColorStop(1,"rgba(255,255,255,0)");
+  x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(cv); })();
+const lightSrc = hex => new THREE.Color(hex).lerp(new THREE.Color(0xffffff), 0.55); // 光源发白带色
 for (const d of DOORS) {
   const wx = d.side * (HW - 0.02), ry = d.side > 0 ? -Math.PI/2 : Math.PI/2;
   const g = new THREE.Group(); g.position.set(wx, 0, d.z); g.rotation.y = ry; scene.add(g);
@@ -217,13 +223,16 @@ for (const d of DOORS) {
   const vseam = new THREE.Mesh(new THREE.BoxGeometry(0.04, DH-0.4, 0.02), boltMetal);
   add(vseam.clone(), -DW*0.32, DH*0.46, 0.075); add(vseam.clone(), DW*0.32, DH*0.46, 0.075);
 
-  // 顶部带栏杆的小窗——透出门后房间的颜色光（关键：一眼是「门」）
-  const winBack = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.4), glowMat);
-  add(winBack, 0, DH-0.5, 0.045);
+  // 顶部带栏杆的小窗——门后房间透出的光（源发白带色 + 软halo，不是死亮块）
   const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.06),
     new THREE.MeshStandardMaterial({ color:0x1c1a16, roughness:.6, metalness:.7 }));
   add(winFrame, 0, DH-0.5, 0.04);
+  const winBack = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.38),
+    new THREE.MeshBasicMaterial({ color:lightSrc(d.color) }));
   add(winBack, 0, DH-0.5, 0.05);
+  const winGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.0),
+    new THREE.MeshBasicMaterial({ map:GLOW, color:d.color, transparent:true, opacity:.42, blending:THREE.AdditiveBlending, depthWrite:false }));
+  add(winGlow, 0, DH-0.5, 0.07);
   for (let i=-1;i<=1;i++){ const barv = new THREE.Mesh(new THREE.BoxGeometry(0.035,0.42,0.03), boltMetal);
     add(barv, i*0.16, DH-0.5, 0.09); }
 
@@ -235,18 +244,20 @@ for (const d of DOORS) {
     add(bolt, sx*(DW/2-0.1), DH*sy, 0.08);
   }
 
-  // 门缝渗光：只在门底一条细线（不是整圈发光边）
-  const under = new THREE.Mesh(new THREE.PlaneGeometry(DW*0.9, 0.045), glowMat);
-  add(under, 0, 0.03, 0.05);
-  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(0.03, DH*0.96), glowMat);
-  sideL.material = new THREE.MeshBasicMaterial({ color:d.color, transparent:true, opacity:.5 });
-  add(sideL, -DW/2-0.005, DH/2, 0.02);
-
-  // 门缝溢到走廊的光 + 地面光晕
-  const pl = new THREE.PointLight(d.color, 2.4, 8, 2.2); pl.position.set(wx - d.side*0.55, 0.9, d.z); scene.add(pl);
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5),
-    new THREE.MeshBasicMaterial({ color:d.color, transparent:true, opacity:.16, blending:THREE.AdditiveBlending, depthWrite:false }));
-  glow.rotation.x = -Math.PI/2; glow.position.set(wx - d.side*0.85, 0.02, d.z); scene.add(glow);
+  // 门底缝：一条发白细亮线（真的门缝）
+  const crack = new THREE.Mesh(new THREE.PlaneGeometry(DW*0.92, 0.03),
+    new THREE.MeshBasicMaterial({ color:lightSrc(d.color) }));
+  add(crack, 0, 0.02, 0.055);
+  // 门缝往上/往地面漫出的软光（径向渐变，有衰减）
+  const underGlow = new THREE.Mesh(new THREE.PlaneGeometry(DW*1.35, 0.75),
+    new THREE.MeshBasicMaterial({ map:GLOW, color:d.color, transparent:true, opacity:.5, blending:THREE.AdditiveBlending, depthWrite:false }));
+  add(underGlow, 0, 0.12, 0.06);
+  // 点光源：真照亮门口墙面与地面（柔和衰减）
+  const pl = new THREE.PointLight(d.color, 2.0, 7.5, 2.5); pl.position.set(wx - d.side*0.5, 0.65, d.z); scene.add(pl);
+  // 地面软光池：径向渐变代替硬边方块
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.4),
+    new THREE.MeshBasicMaterial({ map:GLOW, color:d.color, transparent:true, opacity:.5, blending:THREE.AdditiveBlending, depthWrite:false }));
+  pool.rotation.x = -Math.PI/2; pool.position.set(wx - d.side*0.8, 0.02, d.z); scene.add(pool);
   doorObjs.push({ d, x:wx, z:d.z });
 }
 
