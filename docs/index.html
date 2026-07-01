@@ -134,7 +134,18 @@
       <div id="corrVig"></div>
       <div id="corrHotspots"></div>
       <div class="hero-clip" id="hero"></div>
+      <!-- 走到门前浮出的进入提示（跟随头顶） -->
+      <button id="doorPrompt"></button>
       <div id="corrHint">走廊尽头一片黑。亮着光的门后，各有一个世界——走过去，推开一扇。</div>
+      <!-- 触屏/无键盘：左右走动按钮 -->
+      <div id="corrCtrls">
+        <button class="corr-arrow" id="corrLeft" aria-label="向左走">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="corr-arrow" id="corrRight" aria-label="向右走">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
       <!-- 进门占位（房间未建好） -->
       <div id="roomStub" class="hidden">
         <p id="stubText"></p>
