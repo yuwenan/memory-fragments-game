@@ -150,28 +150,61 @@ const DOORS = [
   { id:"cold",  name:"透着冷光的门", side:-1, z:-29, color:0xe2ecff,
     stub:"门缝下淌出一线惨白的冷光，让人脊背发凉。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
 ];
-const DW = 1.5, DH = 2.9, doorObjs = [];
+const DW = 1.4, DH = 2.6, doorObjs = [];
+// 共用材质：锈铁门板 / 深色金属件
+const doorMetal = new THREE.MeshStandardMaterial({ color:0x3a332c, roughness:.52, metalness:.8 });
+const boltMetal = new THREE.MeshStandardMaterial({ color:0x22201c, roughness:.5, metalness:.85 });
 for (const d of DOORS) {
-  const wx = d.side * (HW - 0.03), ry = d.side > 0 ? -Math.PI/2 : Math.PI/2;
+  const wx = d.side * (HW - 0.02), ry = d.side > 0 ? -Math.PI/2 : Math.PI/2;
   const g = new THREE.Group(); g.position.set(wx, 0, d.z); g.rotation.y = ry; scene.add(g);
-  // 门洞（凹陷的暗门板）
-  const frameGeo = new THREE.BoxGeometry(DW+0.3, DH+0.25, 0.25);
-  const frame = new THREE.Mesh(frameGeo, new THREE.MeshStandardMaterial({ color:0x0c0a08, roughness:.85, metalness:.15 }));
-  frame.position.set(0, (DH+0.25)/2, -0.13); frame.castShadow = true; g.add(frame);
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH),
-    new THREE.MeshStandardMaterial({ color:0x161310, roughness:.8, metalness:.2 }));
-  panel.position.set(0, DH/2, 0.005); g.add(panel);
-  // 发光门缝
   const glowMat = new THREE.MeshBasicMaterial({ color:d.color });
-  const bar = (w,h,x,y) => { const b = new THREE.Mesh(new THREE.PlaneGeometry(w,h), glowMat);
-    b.position.set(x, y, 0.02); g.add(b); return b; };
-  bar(DW+0.05, 0.05, 0, DH+0.02); bar(0.05, DH, -DW/2-0.02, DH/2); bar(0.05, DH, DW/2+0.02, DH/2);
-  bar(DW, 0.06, 0, 0.05);
-  // 门缝溢出的光
-  const pl = new THREE.PointLight(d.color, 2.2, 8, 2.2); pl.position.set(wx - d.side*0.6, 1.0, d.z); scene.add(pl);
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.6),
-    new THREE.MeshBasicMaterial({ color:d.color, transparent:true, opacity:.18, blending:THREE.AdditiveBlending, depthWrite:false }));
-  glow.rotation.x = -Math.PI/2; glow.position.set(wx - d.side*0.9, 0.02, d.z); scene.add(glow);
+  const add = (mesh, x, y, zz) => { mesh.position.set(x, y, zz); g.add(mesh); return mesh; };
+
+  // 凹进墙里的门框（石/水泥）
+  const jamb = new THREE.Mesh(new THREE.BoxGeometry(DW+0.34, DH+0.3, 0.3),
+    new THREE.MeshStandardMaterial({ color:0x2a2620, roughness:.95, metalness:.05 }));
+  add(jamb, 0, (DH+0.3)/2, -0.16).castShadow = true;
+
+  // 门板（锈铁厚板，凸出墙面一点）
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(DW, DH, 0.08), doorMetal);
+  add(leaf, 0, DH/2, 0.03).castShadow = true;
+
+  // 门板上的两块凹陷面板（横向压线，做出真门的层次）
+  const seam = new THREE.Mesh(new THREE.BoxGeometry(DW-0.16, 0.04, 0.02), boltMetal);
+  add(seam.clone(), 0, DH*0.62, 0.075); add(seam.clone(), 0, DH*0.30, 0.075);
+  const vseam = new THREE.Mesh(new THREE.BoxGeometry(0.04, DH-0.4, 0.02), boltMetal);
+  add(vseam.clone(), -DW*0.32, DH*0.46, 0.075); add(vseam.clone(), DW*0.32, DH*0.46, 0.075);
+
+  // 顶部带栏杆的小窗——透出门后房间的颜色光（关键：一眼是「门」）
+  const winBack = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.4), glowMat);
+  add(winBack, 0, DH-0.5, 0.045);
+  const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.06),
+    new THREE.MeshStandardMaterial({ color:0x1c1a16, roughness:.6, metalness:.7 }));
+  add(winFrame, 0, DH-0.5, 0.04);
+  add(winBack, 0, DH-0.5, 0.05);
+  for (let i=-1;i<=1;i++){ const barv = new THREE.Mesh(new THREE.BoxGeometry(0.035,0.42,0.03), boltMetal);
+    add(barv, i*0.16, DH-0.5, 0.09); }
+
+  // 把手 + 四角铆钉
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.07,0.22,0.09), boltMetal);
+  add(handle, DW*0.34, DH*0.42, 0.10);
+  for (const sx of [-1,1]) for (const sy of [0.06, 0.94]){
+    const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6), boltMetal);
+    add(bolt, sx*(DW/2-0.1), DH*sy, 0.08);
+  }
+
+  // 门缝渗光：只在门底一条细线（不是整圈发光边）
+  const under = new THREE.Mesh(new THREE.PlaneGeometry(DW*0.9, 0.045), glowMat);
+  add(under, 0, 0.03, 0.05);
+  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(0.03, DH*0.96), glowMat);
+  sideL.material = new THREE.MeshBasicMaterial({ color:d.color, transparent:true, opacity:.5 });
+  add(sideL, -DW/2-0.005, DH/2, 0.02);
+
+  // 门缝溢到走廊的光 + 地面光晕
+  const pl = new THREE.PointLight(d.color, 2.4, 8, 2.2); pl.position.set(wx - d.side*0.55, 0.9, d.z); scene.add(pl);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5),
+    new THREE.MeshBasicMaterial({ color:d.color, transparent:true, opacity:.16, blending:THREE.AdditiveBlending, depthWrite:false }));
+  glow.rotation.x = -Math.PI/2; glow.position.set(wx - d.side*0.85, 0.02, d.z); scene.add(glow);
   doorObjs.push({ d, x:wx, z:d.z });
 }
 
@@ -270,10 +303,10 @@ function frame(){
     camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
     right.crossVectors(fwd, up).normalize();
     mv.set(0,0,0);
-    if (keys["w"]||keys["arrowup"]) mv.add(fwd);
-    if (keys["s"]||keys["arrowdown"]) mv.sub(fwd);
-    if (keys["d"]||keys["arrowright"]) mv.add(right);
-    if (keys["a"]||keys["arrowleft"]) mv.sub(right);
+    if (keys["w"]||keys["arrowup"]) mv.add(fwd);      // W/↑ 前进
+    if (keys["s"]||keys["arrowdown"]) mv.sub(fwd);    // S/↓ 后退
+    if (keys["d"]||keys["arrowright"]) mv.add(right); // D/→ 右移
+    if (keys["a"]||keys["arrowleft"]) mv.sub(right);  // A/← 左移；转头用鼠标
     if (padActive){ mv.addScaledVector(fwd, -padVec.y); mv.addScaledVector(right, padVec.x); }
     if (mv.lengthSq() > 0.0001) {
       mv.normalize().multiplyScalar(SPEED * dt); camera.position.add(mv);
