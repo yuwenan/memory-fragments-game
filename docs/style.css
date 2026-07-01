@@ -432,6 +432,19 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
 #corridor.walking .hero-clip{animation-play-state:running;}
 @keyframes walk{to{background-position:-700px center;}}
 #corrHotspots{position:absolute;inset:0;}
+/* 脚下接触阴影：把人踩到地上（JS 每帧定位/缩放）*/
+#heroShadow{position:absolute;left:0;top:0;width:175px;height:60px;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(0,0,0,.6) 0%,rgba(0,0,0,.28) 45%,transparent 72%);
+  filter:blur(3px);will-change:left,top,width,height,opacity;}
+/* 湿地面倒影：背影精灵竖直翻转 + 向下淡出 + 模糊（与本体同步走路动画）*/
+.hero-reflect{position:absolute;left:553px;top:392px;width:175px;height:300px;z-index:1;
+  background:url("assets/characters/walk_strip.png") 0 center/auto 300px repeat-x;
+  transform-origin:bottom center;pointer-events:none;opacity:.14;
+  filter:brightness(.3) blur(1.4px) saturate(.6);will-change:transform;
+  -webkit-mask-image:linear-gradient(to top,transparent 12%,rgba(0,0,0,.85) 62%);
+          mask-image:linear-gradient(to top,transparent 12%,rgba(0,0,0,.85) 62%);
+  animation:walk .8s steps(4) infinite;animation-play-state:paused;}
+#corridor.walking .hero-reflect{animation-play-state:running;}
 #corrHint{position:absolute;left:8%;right:8%;bottom:26px;text-align:center;color:#b6a487;
   font-size:16px;letter-spacing:2px;line-height:1.7;text-shadow:0 2px 10px #000;
   animation:hintPulse 3s ease-in-out infinite;pointer-events:none;}

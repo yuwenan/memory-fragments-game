@@ -140,6 +140,7 @@ const doorSeq = $("#doorSeq"), dsDoorImg = $("#dsDoorImg"), keySlot = $("#keySlo
 const exitSeq = $("#exitSeq"), corridor = $("#corridor"), corrHotspots = $("#corrHotspots"),
       hero = $("#hero"), corrHint = $("#corrHint"), roomStub = $("#roomStub"), stubText = $("#stubText");
 const doorPrompt = $("#doorPrompt"), corrLeftBtn = $("#corrLeft"), corrRightBtn = $("#corrRight");
+const heroShadow = $("#heroShadow"), heroReflect = $("#heroReflect");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -568,8 +569,27 @@ function nearestDoor(u, v) {
   return best;
 }
 // 背影精灵：往深处（背对镜头）为正；dir 只做左右镜像的姿态提示
-function placeHero(x, y, s, dir) {
-  hero.style.transform = `translate(${x - HERO_BASE_X}px,${y - HERO_BASE_Y}px) scale(${s}) scaleX(${dir})`;
+// 把人物「焊」进场景光：脚下阴影 + 按位置重打光（走廊中央被吊灯照亮，贴墙成剪影）+ 湿地面倒影
+function placeHero(x, y, s, dir, u = 0.5, v = 0) {
+  const tf = `translate(${x - HERO_BASE_X}px,${y - HERO_BASE_Y}px) scale(${s}) scaleX(${dir})`;
+  // 场景打光：越靠走廊中央越亮（灯在中轴），越贴墙越暗成黑影
+  const lit = Math.max(0, 1 - Math.abs(u - 0.5) * 1.75);
+  const b = 0.24 + 0.52 * lit;         // 亮度：侧墙 0.24（近剪影）→ 中央 0.76
+  const warm = 0.28 * lit;             // 暖光染色
+  hero.style.transform = tf;
+  hero.style.filter =
+    `brightness(${b.toFixed(3)}) contrast(1.12) saturate(${(0.7 + 0.2 * lit).toFixed(2)}) ` +
+    `sepia(${warm.toFixed(3)}) drop-shadow(0 3px 8px rgba(0,0,0,.55))`;
+  // 脚下接触阴影
+  const sw = 175 * s * 1.15, sh = 60 * s;
+  heroShadow.style.left = (x - sw / 2) + "px";
+  heroShadow.style.top = (y - sh * 0.62) + "px";
+  heroShadow.style.width = sw + "px";
+  heroShadow.style.height = sh + "px";
+  heroShadow.style.opacity = (0.34 + 0.22 * (1 - v)).toFixed(2);
+  // 湿地面倒影（竖直翻转，脚点对齐）
+  heroReflect.style.transform = tf + " scaleY(-1)";
+  heroReflect.style.opacity = (0.16 * (0.5 + 0.5 * lit)).toFixed(3);
 }
 
 // 走廊操控状态：u/v = 地面坐标；up/down/left/right = 按键；target = 点地面/点门自动走
@@ -599,7 +619,7 @@ function enterCorridor() {
   }
   // 起手：站在走廊口的大特写
   hero.style.transition = "none";
-  placeHero(HERO_BASE_X, HERO_BASE_Y, 1, 1);
+  placeHero(HERO_BASE_X, HERO_BASE_Y, 1, 1, 0.5, 0);
   void hero.offsetWidth;
   corrHint.textContent = "走廊尽头一片黑。亮着光的门后，各有一个世界——走过去，推开一扇。";
   corrHint.style.opacity = "";
@@ -610,7 +630,7 @@ function enterCorridor() {
   setTimeout(() => {
     hero.style.transition = "transform 1.15s ease";
     corridor.classList.add("walking");
-    const c = floorPos(corr.u, corr.v); placeHero(c.x, c.y, c.s, 1);
+    const c = floorPos(corr.u, corr.v); placeHero(c.x, c.y, c.s, 1, corr.u, corr.v);
     playSfx("cloth");
     setTimeout(() => {
       corridor.classList.remove("walking");
@@ -672,7 +692,7 @@ function corrTick(ts) {
   }
 
   const c = floorPos(corr.u, corr.v);
-  placeHero(c.x, c.y, c.s, corr.dir);
+  placeHero(c.x, c.y, c.s, corr.dir, corr.u, corr.v);
 
   // 门口检测
   const nd = nearestDoor(corr.u, corr.v);
