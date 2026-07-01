@@ -122,6 +122,26 @@
       </div>
     </div>
 
+    <!-- 出门过场：定格门开图 → 镜头推进右侧开着的门 → 收黑 → 走廊 -->
+    <div id="exitSeq" class="hidden">
+      <div id="exitBg"></div>
+      <div id="exitFade"></div>
+    </div>
+
+    <!-- 走廊中枢：第三人称背影走向亮着光的门 -->
+    <div id="corridor" class="hidden">
+      <div id="corrBg"></div>
+      <div id="corrVig"></div>
+      <div id="corrHotspots"></div>
+      <div class="hero-clip" id="hero"></div>
+      <div id="corrHint">走廊尽头一片黑。亮着光的门后，各有一个世界——走过去，推开一扇。</div>
+      <!-- 进门占位（房间未建好） -->
+      <div id="roomStub" class="hidden">
+        <p id="stubText"></p>
+        <button id="stubBack" class="ds-btn">回 到 走 廊</button>
+      </div>
+    </div>
+
     <!-- 密码键盘 -->
     <div id="keypad" class="hidden">
       <div class="keypad-panel">

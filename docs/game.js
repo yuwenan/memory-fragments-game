@@ -82,6 +82,7 @@ const state = {
   memories: [],      // 已拾起的记忆碎片 id
   pendingMemory: null, // 关闭柜门弹窗后触发的闪回
   finished: false,   // 是否已通关（开门）
+  reachedCorridor: false, // 已走出觉醒室、进入走廊中枢
 };
 
 // ===== 本地存档（localStorage，零后端）=====
@@ -93,6 +94,7 @@ function saveGame() {
       hasKey: state.hasKey, cabinetSolved: state.cabinetSolved,
       photoSeen: state.photoSeen,
       memories: state.memories, finished: state.finished,
+      reachedCorridor: state.reachedCorridor,
     }));
   } catch (e) {}
 }
@@ -100,13 +102,14 @@ function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 function hasSave() {
   const s = loadSave();
-  return !!(s && !s.finished && ((s.clues && s.clues.length) || s.cabinetSolved || s.fragments));
+  return !!(s && !s.finished && ((s.clues && s.clues.length) || s.cabinetSolved || s.fragments || s.reachedCorridor));
 }
 function resetState() {
   state.clues = new Set(); state.fragments = 0; state.hasKey = false;
   state.cabinetSolved = false; state.input = ""; state.wrong = 0;
   state.photoSeen = false;
   state.memories = []; state.pendingMemory = null; state.finished = false;
+  state.reachedCorridor = false;
 }
 function applySave(s) {
   if (!s) return;
@@ -117,6 +120,7 @@ function applySave(s) {
   state.photoSeen = !!s.photoSeen;
   state.memories = s.memories || [];
   state.finished = !!s.finished;
+  state.reachedCorridor = !!s.reachedCorridor;
   state.input = ""; state.wrong = 0; state.pendingMemory = null;
 }
 
@@ -133,6 +137,8 @@ const memArchive = $("#memArchive"), maList = $("#maList"), muteBtn = $("#muteBt
 const imgZoom = $("#imgZoom"), imgZoomImg = $("#imgZoomImg");
 const confirmBox = $("#confirmBox");
 const doorSeq = $("#doorSeq"), dsDoorImg = $("#dsDoorImg"), keySlot = $("#keySlot");
+const exitSeq = $("#exitSeq"), corridor = $("#corridor"), corrHotspots = $("#corrHotspots"),
+      hero = $("#hero"), corrHint = $("#corrHint"), roomStub = $("#roomStub"), stubText = $("#stubText");
 
 // ===== 舞台缩放（等比铺满、居中、留黑边）=====
 let scale = 1, rect = null;
@@ -181,6 +187,14 @@ function init() {
   memArchive.addEventListener("click", e => { if (e.target === memArchive) closeArchive(); });
   popupImg.addEventListener("click", openZoom);
   imgZoom.addEventListener("click", closeZoom);
+  $("#stubBack").addEventListener("click", backToCorridor);
+  corridor.addEventListener("mousemove", e => {
+    if (hoverLabel.style.display === "block") {
+      const p = toStage(e.clientX, e.clientY);
+      hoverLabel.style.left = (p.x + 16) + "px";
+      hoverLabel.style.top = (p.y + 20) + "px";
+    }
+  });
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       if (!confirmBox.classList.contains("hidden")) { hideConfirm(); return; }
@@ -201,7 +215,12 @@ function updateRoomBg() {
   bgLayer.style.backgroundImage = `url("${BG}${img}")`;
 }
 function newGame() { clearSave(); resetState(); enterRoom(true); }
-function continueGame() { applySave(loadSave()); enterRoom(false); }
+function continueGame() {
+  applySave(loadSave());
+  if (state.reachedCorridor) { initAmbient(); titleEl.style.opacity = "0"; stopTitleFX();
+    setTimeout(() => { titleEl.classList.add("hidden"); enterCorridor(); }, 800); }
+  else enterRoom(false);
+}
 function enterRoom(isNew) {
   initAmbient(); // 必须在点击手势内创建 AudioContext
   titleEl.style.opacity = "0";
@@ -471,8 +490,84 @@ function confirmCode() {
 
 // ===== 通关 =====
 function winGame() {
-  state.finished = true; saveGame();
-  playDoorSeq();
+  state.reachedCorridor = true; saveGame();
+  playExit();
+}
+
+// ===== 出门过场 → 走廊中枢 =====
+// 定格「门开」房间图 → 镜头推进右侧开着的门 → 收黑 → 走廊
+function playExit() {
+  playSfx("door");
+  exitSeq.classList.remove("hidden");
+  requestAnimationFrame(() => exitSeq.classList.add("go"));
+  setTimeout(() => playSfx("clunk"), 2300); // 铁门在身后合拢
+  setTimeout(enterCorridor, 2850);
+}
+
+// 走廊三扇亮门（颜色暗示门后世界；房间内容待建）
+const CORR_DOORS = [
+  { id: "warm",  name: "透着暖光的门", x: 78, y: 86, w: 214, h: 356, tx: 195, ty: 596, scale: .5,
+    stub: "门缝下透出暖黄的光，像谁家亮着的客厅。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
+  { id: "pixel", name: "透着幽蓝的门", x: 420, y: 198, w: 84, h: 246, tx: 440, ty: 470, scale: .34,
+    stub: "门缝下渗出幽蓝的光，一闪一闪，像老式屏幕。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
+  { id: "cold",  name: "透着冷光的门", x: 805, y: 202, w: 88, h: 238, tx: 848, ty: 468, scale: .34,
+    stub: "门缝下淌出一线惨白的冷光，让人脊背发凉。\n你伸手推开它——\n\n（这扇门后的房间，还在建造中……）" },
+];
+
+let corrBusy = false;
+function enterCorridor() {
+  initAmbient();
+  room.classList.add("hidden");
+  exitSeq.classList.add("hidden"); exitSeq.classList.remove("go");
+  titleEl.classList.add("hidden");
+  corrBusy = false;
+  corridor.classList.remove("walking");
+  hero.style.transition = "none"; hero.style.transform = ""; void hero.offsetWidth; hero.style.transition = "";
+  corrHint.style.opacity = "";
+  roomStub.classList.remove("show"); roomStub.classList.add("hidden");
+  buildCorridorDoors();
+  corridor.classList.remove("hidden");
+  corridor.style.opacity = "0"; corridor.style.transition = "opacity 1.4s ease";
+  requestAnimationFrame(() => { corridor.style.opacity = "1"; });
+}
+function buildCorridorDoors() {
+  corrHotspots.innerHTML = "";
+  for (const d of CORR_DOORS) {
+    const el = document.createElement("div");
+    el.className = "hotspot";
+    el.style.left = d.x + "px"; el.style.top = d.y + "px";
+    el.style.width = d.w + "px"; el.style.height = d.h + "px";
+    el.addEventListener("mouseenter", () => { hoverLabel.textContent = d.name; hoverLabel.style.display = "block"; });
+    el.addEventListener("mouseleave", () => { hoverLabel.style.display = "none"; });
+    el.addEventListener("click", () => walkToDoor(d));
+    corrHotspots.appendChild(el);
+  }
+}
+// 走向选中的门：位移+缩小（脚落到门前），到位后进门
+function walkToDoor(d) {
+  if (corrBusy) return;
+  corrBusy = true;
+  hoverLabel.style.display = "none";
+  corrHint.style.opacity = "0";
+  corridor.classList.add("walking");
+  playSfx("cloth");
+  const cx = 553 + 175 / 2, cy = 392 + 300; // 起始脚点 (640,692)
+  hero.style.transform = `translate(${d.tx - cx}px,${d.ty - cy}px) scale(${d.scale})`;
+  setTimeout(() => {
+    corridor.classList.remove("walking");
+    playSfx("door");
+    stubText.textContent = d.stub;
+    roomStub.classList.remove("hidden");
+    requestAnimationFrame(() => roomStub.classList.add("show"));
+  }, 1800);
+}
+function backToCorridor() {
+  roomStub.classList.remove("show");
+  setTimeout(() => roomStub.classList.add("hidden"), 700);
+  setTimeout(() => {
+    hero.style.transition = "none"; hero.style.transform = ""; void hero.offsetWidth; hero.style.transition = "";
+    corrBusy = false; corrHint.style.opacity = "";
+  }, 500);
 }
 // 开门推门过场：插钥匙→转动→推门露出黑暗走廊→通关字幕
 function playDoorSeq() {

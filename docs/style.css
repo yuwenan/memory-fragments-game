@@ -406,6 +406,45 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font);
   border:1px solid rgba(140,100,52,.6);box-shadow:inset 0 1px 0 rgba(200,155,90,.16);transition:color .18s,box-shadow .18s;}
 .ds-btn:hover{color:#ecc47e;box-shadow:0 0 22px rgba(160,100,30,.5);}
 
+/* ===== 出门过场：定格门开图 → 镜头推进右门 → 收黑 ===== */
+#exitSeq{position:absolute;inset:0;z-index:86;background:#000;overflow:hidden;}
+#exitBg{position:absolute;inset:-2%;
+  background:url("assets/backgrounds/room01_bg_dooropen.jpg") center/cover;
+  transform-origin:82% 55%;will-change:transform;}
+#exitSeq.go #exitBg{animation:exitPush 2.8s cubic-bezier(.5,0,.65,1) forwards;}
+@keyframes exitPush{0%{transform:scale(1)}100%{transform:scale(2.95)}}
+#exitFade{position:absolute;inset:0;background:#000;opacity:0;}
+#exitSeq.go #exitFade{animation:exitBlack 2.8s ease-in forwards;}
+@keyframes exitBlack{0%,50%{opacity:0}100%{opacity:1}}
+
+/* ===== 走廊中枢 ===== */
+#corridor{position:absolute;inset:0;z-index:60;overflow:hidden;background:#000;}
+#corrBg{position:absolute;inset:0;background:url("assets/backgrounds/corridor_bg.jpg") center/cover;}
+#corrVig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 82% 72% at 50% 45%,transparent 42%,rgba(0,0,0,.5) 100%);}
+/* 角色背影：品红抠出的4帧走路精灵，背景平铺循环 */
+.hero-clip{position:absolute;left:553px;top:392px;width:175px;height:300px;
+  background:url("assets/characters/walk_strip.png") 0 center / auto 300px repeat-x;
+  transform-origin:bottom center;will-change:transform,background-position;pointer-events:none;
+  filter:brightness(.6) contrast(1.05) saturate(.92) drop-shadow(0 6px 14px rgba(0,0,0,.7));
+  transition:transform 1.7s cubic-bezier(.42,0,.4,1);
+  animation:walk .8s steps(4) infinite;animation-play-state:paused;}
+#corridor.walking .hero-clip{animation-play-state:running;}
+@keyframes walk{to{background-position:-700px center;}}
+#corrHotspots{position:absolute;inset:0;}
+#corrHint{position:absolute;left:8%;right:8%;bottom:26px;text-align:center;color:#b6a487;
+  font-size:16px;letter-spacing:2px;line-height:1.7;text-shadow:0 2px 10px #000;
+  animation:hintPulse 3s ease-in-out infinite;pointer-events:none;}
+@keyframes hintPulse{0%,100%{opacity:.45}50%{opacity:.9}}
+#corridor.walking #corrHint{opacity:0;animation:none;transition:opacity .4s;}
+/* 进门占位（房间还没建）*/
+#roomStub{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:24px;text-align:center;
+  background:rgba(0,0,0,.88);opacity:0;pointer-events:none;transition:opacity .8s;}
+#roomStub.show{opacity:1;pointer-events:auto;}
+#stubText{color:#c8bca2;font-size:17px;letter-spacing:2px;line-height:2.1;max-width:640px;
+  white-space:pre-line;text-shadow:0 2px 8px #000;}
+
 /* 通关闪白（旧，保留无害）*/
 #flash{position:absolute;inset:0;z-index:90;background:#fff;opacity:0;pointer-events:none;
   transition:opacity .15s;}
