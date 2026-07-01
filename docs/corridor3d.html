@@ -284,8 +284,12 @@ for (const d of DOORS) {
 
 // ===== 走廊尽头：镜子（镜像计划的终点）=====
 // 脏雾裂纹的镜面，里面站着「你/镜像」正面立绘；每通关一间房擦亮一分、脸清一分；全清才能穿过
-const visited = new Set();
-const mirror = { progress:0, clarity:0 };
+// 跨页进度：房间是独立页，通关记在 localStorage
+const ROOM_URLS = { warm:"room_warm.html" };   // pixel/cold 待建
+const CLEARED = (()=>{ try{ return new Set(JSON.parse(localStorage.getItem("mf3d_cleared")||"[]")); }catch(e){ return new Set(); } })();
+function saveCleared(){ try{ localStorage.setItem("mf3d_cleared", JSON.stringify([...CLEARED])); }catch(e){} }
+const visited = CLEARED;   // 门口检测/文案沿用
+const mirror = { progress: CLEARED.size/3, clarity: CLEARED.size/3 };  // 返回走廊直接呈现已擦亮
 const MIR_W = 1.55, MIR_H = 2.55, MIR_Z = Z1 + 0.12;
 function mirrorGrime(){
   const cv = document.createElement("canvas"); cv.width = cv.height = 512; const x = cv.getContext("2d");
@@ -419,7 +423,10 @@ function tryEnter(){
   if(document.pointerLockElement) document.exitPointerLock();
   if(atDoor.d.mirror){ passThrough(); return; }                        // 穿过镜子 → 黑暗反转结局
   if(atDoor.d.origin){ $("#restart").classList.add("show"); return; }   // 觉醒室门 → 问是否重新开始
-  visited.add(atDoor.d.id); mirror.progress = visited.size/3;          // 进一扇房门=擦亮镜子一分（占位，等真房间做好）
+  const url = ROOM_URLS[atDoor.d.id];
+  if(url){ location.href = url; return; }                               // 有真房间 → 进房间（暖门=room_warm）
+  // pixel/cold 暂占位：标记通关（等真房间做好换成各自页面）
+  if(!CLEARED.has(atDoor.d.id)){ CLEARED.add(atDoor.d.id); saveCleared(); mirror.progress = CLEARED.size/3; }
   $("#stubText").textContent=atDoor.d.stub; stubEl.classList.add("show");
 }
 // 穿过镜子：黑暗反转结局过场
@@ -437,10 +444,10 @@ function passThrough(){
 $("#stubBack").addEventListener("click", ()=>{ stubEl.classList.remove("show");
   setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
 // 重新开始确认
-$("#rsYes").addEventListener("click", ()=>{ location.href="index.html?new=1"; });
+$("#rsYes").addEventListener("click", ()=>{ try{ localStorage.removeItem("mf3d_cleared"); }catch(e){} location.href="index.html?new=1"; });
 $("#rsNo").addEventListener("click", ()=>{ $("#restart").classList.remove("show");
   setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
-$("#eRestart").addEventListener("click", ()=>{ location.href="index.html?new=1"; });
+$("#eRestart").addEventListener("click", ()=>{ try{ localStorage.removeItem("mf3d_cleared"); }catch(e){} location.href="index.html?new=1"; });
 
 // ===== 循环 =====
 const clock = new THREE.Clock();
