@@ -44,6 +44,24 @@
     color:#e6d6ac;font-size:15px;letter-spacing:3px;cursor:pointer;}
   .btn:hover{background:rgba(60,48,28,.7);}
   .btn.ghost{border-color:rgba(150,140,120,.4);color:#a99;background:rgba(20,18,14,.5);}
+  /* 结局黑暗反转 */
+  #ending{position:fixed;inset:0;z-index:40;background:#000;opacity:0;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.5s;}
+  #ending.show{opacity:1;pointer-events:auto;}
+  #ending .eln{position:absolute;max-width:70%;text-align:center;font-size:22px;line-height:2;
+    letter-spacing:3px;color:#d8cba8;text-shadow:0 2px 14px #000;opacity:0;transition:opacity 2s;}
+  #ending .eln.show{opacity:1;}
+  #ending .ewalk{position:absolute;bottom:22%;left:50%;width:120px;height:206px;margin-left:-60px;
+    background:url("assets/characters/walk_strip.png") 0 center/auto 206px repeat-x;
+    filter:brightness(.32) blur(.4px);opacity:0;animation:walk .85s steps(4) infinite;}
+  #ending .ewalk.show{animation:walk .85s steps(4) infinite, walkaway 7s ease-in forwards;}
+  @keyframes walkaway{0%{opacity:.9;transform:translateY(0) scale(1)}
+    85%{opacity:.5}100%{opacity:0;transform:translateY(-120px) scale(.28)}}
+  #ending .efin{position:absolute;display:flex;flex-direction:column;align-items:center;gap:20px;
+    opacity:0;transition:opacity 2.5s;}
+  #ending .efin.show{opacity:1;}
+  #ending .eft{font-size:30px;letter-spacing:14px;color:#c9b98a;}
+  #ending .efs{font-size:14px;letter-spacing:2px;color:#8a7f66;max-width:520px;text-align:center;line-height:1.9;}
   /* 点击开始 / 加载 */
   #gate{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:20px;background:#050506;text-align:center;transition:opacity .8s;}
@@ -75,6 +93,19 @@
 <div id="stub"><p id="stubText"></p><button class="btn" id="stubBack">回 到 走 廊</button></div>
 <div id="restart"><p>这是你走出来的门——觉醒室。<br>回去会<b>重新开始本局</b>，走廊里的进度将清空。</p>
   <div class="rs-btns"><button class="btn" id="rsYes">重 新 开 始</button><button class="btn ghost" id="rsNo">留 在 走 廊</button></div></div>
+<!-- 结局：穿过镜子（黑暗反转） -->
+<div id="ending">
+  <div class="eln" id="eln1">镜子里的人，缓缓抬起了头。</div>
+  <div class="eln" id="eln2">它看着你——用你的脸，冲你笑了一下。</div>
+  <div class="ewalk" id="ewalk"></div>
+  <div class="eln" id="eln3">它穿过你，走了出去。<br>去过你的人生。</div>
+  <div class="eln" id="eln4">你被留在了玻璃的另一面。<br>灯，灭了。</div>
+  <div class="efin" id="efin">
+    <div class="eft">记 忆 碎 片</div>
+    <div class="efs">你从来不是在找回自己——你在把取代你的东西，补完整。</div>
+    <button class="btn" id="eRestart">重 新 开 始</button>
+  </div>
+</div>
 <div id="pad"><i></i></div>
 <div id="eBtn">E</div>
 <div id="gate">
@@ -239,6 +270,50 @@ for (const d of DOORS) {
   doorObjs.push({ d:{ name:"觉醒室", prompt:"按 E 回到觉醒室 · 重新开始本局", origin:true }, x:ox, z:Z0 });
 }
 
+// ===== 走廊尽头：镜子（镜像计划的终点）=====
+// 脏雾裂纹的镜面，里面站着「你/镜像」正面立绘；每通关一间房擦亮一分、脸清一分；全清才能穿过
+const visited = new Set();
+const mirror = { progress:0, clarity:0 };
+const MIR_W = 1.55, MIR_H = 2.55, MIR_Z = Z1 + 0.12;
+function mirrorGrime(){
+  const cv = document.createElement("canvas"); cv.width = cv.height = 512; const x = cv.getContext("2d");
+  x.fillStyle = "rgba(26,30,32,0.8)"; x.fillRect(0,0,512,512);
+  for (let i=0;i<240;i++){ const r=Math.random()*58+8, gx=Math.random()*512, gy=Math.random()*512;
+    const g=x.createRadialGradient(gx,gy,0,gx,gy,r);
+    g.addColorStop(0,`rgba(${18+Math.random()*28|0},${22+Math.random()*28|0},${24+Math.random()*28|0},${(Math.random()*0.5).toFixed(2)})`);
+    g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.beginPath(); x.arc(gx,gy,r,0,7); x.fill(); }
+  for (let i=0;i<26;i++){ x.strokeStyle=`rgba(58,64,62,${(Math.random()*0.24).toFixed(2)})`; x.lineWidth=Math.random()*8+2;
+    const px=Math.random()*512; x.beginPath(); x.moveTo(px,0); x.bezierCurveTo(px+30,180,px-20,320,px+12,512); x.stroke(); }
+  const cx0=170+Math.random()*180, cy0=150+Math.random()*160; x.strokeStyle="rgba(198,208,220,0.5)";
+  for (let i=0;i<10;i++){ x.lineWidth=Math.random()*1.4+0.4; let a=Math.random()*7, len=Math.random()*210+60, px=cx0, py=cy0;
+    x.beginPath(); x.moveTo(px,py); for(let s=0;s<5;s++){ a+=(Math.random()-0.5)*0.6; px+=Math.cos(a)*len/5; py+=Math.sin(a)*len/5; x.lineTo(px,py);} x.stroke(); }
+  return new THREE.CanvasTexture(cv);
+}
+const selfTex = texL.load("./assets/characters/mirror_self.png"); selfTex.colorSpace = THREE.SRGBColorSpace;
+const CY = MIR_H/2 + 0.12;                 // 镜子竖直中心
+// 暗背板（在最里）
+const backing = new THREE.Mesh(new THREE.PlaneGeometry(MIR_W, MIR_H),
+  new THREE.MeshBasicMaterial({ color:0x05060a })); backing.position.set(0, CY, MIR_Z-0.06); scene.add(backing);
+// 镜中人（正面立绘），在背板前、玻璃后
+const selfMat = new THREE.MeshBasicMaterial({ map:selfTex, transparent:true, opacity:0.1, depthWrite:false, color:0x8a97a6 });
+const selfFig = new THREE.Mesh(new THREE.PlaneGeometry(MIR_W*0.9, MIR_H*0.95), selfMat);
+selfFig.position.set(0, MIR_H*0.485+0.12, MIR_Z-0.03); scene.add(selfFig);
+// 脏雾裂纹玻璃层（最前）
+const grimeMat = new THREE.MeshBasicMaterial({ map:mirrorGrime(), transparent:true, opacity:0.9, depthWrite:false });
+const glass = new THREE.Mesh(new THREE.PlaneGeometry(MIR_W, MIR_H), grimeMat);
+glass.position.set(0, CY, MIR_Z); scene.add(glass);
+// 边框：4 条金属边，只包边不挡中间（这是之前那个致命 bug：整块实心框把镜中人挡住了）
+const frameMat = new THREE.MeshStandardMaterial({ color:0x14120f, roughness:.45, metalness:.75 });
+const fz = MIR_Z + 0.04;
+const mkBar = (w,h,x,y)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.12), frameMat);
+  b.position.set(x, y, fz); b.castShadow=true; scene.add(b); };
+mkBar(MIR_W+0.26, 0.15, 0, CY + MIR_H/2 + 0.05);
+mkBar(MIR_W+0.26, 0.15, 0, CY - MIR_H/2 - 0.05);
+mkBar(0.15, MIR_H+0.26, -MIR_W/2 - 0.05, CY);
+mkBar(0.15, MIR_H+0.26,  MIR_W/2 + 0.05, CY);
+const mglow = new THREE.PointLight(0x9db4d0, 1.0, 13, 2); mglow.position.set(0, 1.6, Z1+1.4); scene.add(mglow);
+doorObjs.push({ d:{ name:"镜子", mirror:true }, x:0, z:MIR_Z });
+
 // ===== 灯光 =====
 scene.add(new THREE.AmbientLight(0x2c3038, 2.6));
 const lamps = [];
@@ -310,14 +385,36 @@ function updatePrompt(){
     if(facing>0.55){ const score=facing*(1-dist/3.4); if(score>bestScore){bestScore=score;near=o;} }
   }
   if(near!==atDoor){ atDoor=near;
-    if(near){ promptEl.textContent = near.d.prompt || ("按 E 进入 · "+near.d.name); promptEl.classList.add("show"); }
+    if(near){ promptEl.textContent = promptForDoor(near); promptEl.classList.add("show"); }
     else promptEl.classList.remove("show"); }
+  else if(near && near.d.mirror){ promptEl.textContent = promptForDoor(near); }  // 镜子文案随进度刷新
 }
-function tryEnter(){ if(entering||!atDoor) return; entering=true; for(const k in keys)keys[k]=false;
+function promptForDoor(o){
+  if(o.d.mirror) return mirror.progress>=1 ? "按 E 穿过镜子" : `镜子太脏，看不清里面的人……还差 ${3-visited.size} 段记忆`;
+  return o.d.prompt || ("按 E 进入 · "+o.d.name);
+}
+function tryEnter(){
+  if(entering||!atDoor) return;
+  if(atDoor.d.mirror && mirror.progress<1) return;   // 没集齐记忆，穿不过去
+  entering=true; for(const k in keys)keys[k]=false;
   padVec={x:0,y:0}; promptEl.classList.remove("show");
   if(document.pointerLockElement) document.exitPointerLock();
+  if(atDoor.d.mirror){ passThrough(); return; }                        // 穿过镜子 → 黑暗反转结局
   if(atDoor.d.origin){ $("#restart").classList.add("show"); return; }   // 觉醒室门 → 问是否重新开始
+  visited.add(atDoor.d.id); mirror.progress = visited.size/3;          // 进一扇房门=擦亮镜子一分（占位，等真房间做好）
   $("#stubText").textContent=atDoor.d.stub; stubEl.classList.add("show");
+}
+// 穿过镜子：黑暗反转结局过场
+function passThrough(){
+  const E = document.querySelector("#ending"), show=id=>document.querySelector(id).classList.add("show"),
+        hide=id=>document.querySelector(id).classList.remove("show");
+  E.classList.add("show");
+  setTimeout(()=>show("#eln1"),700);   setTimeout(()=>hide("#eln1"),3500);
+  setTimeout(()=>show("#eln2"),3900);  setTimeout(()=>hide("#eln2"),7100);
+  setTimeout(()=>show("#ewalk"),6700);
+  setTimeout(()=>show("#eln3"),7700);  setTimeout(()=>hide("#eln3"),11200);
+  setTimeout(()=>show("#eln4"),11600); setTimeout(()=>hide("#eln4"),15200);
+  setTimeout(()=>show("#efin"),15900);
 }
 $("#stubBack").addEventListener("click", ()=>{ stubEl.classList.remove("show");
   setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
@@ -325,6 +422,7 @@ $("#stubBack").addEventListener("click", ()=>{ stubEl.classList.remove("show");
 $("#rsYes").addEventListener("click", ()=>{ location.href="index.html?new=1"; });
 $("#rsNo").addEventListener("click", ()=>{ $("#restart").classList.remove("show");
   setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
+$("#eRestart").addEventListener("click", ()=>{ location.href="index.html?new=1"; });
 
 // ===== 循环 =====
 const clock = new THREE.Clock();
@@ -361,6 +459,12 @@ function frame(){
     const f = 0.85 + Math.sin(flickT*6 + i*2.3)*0.06 + (Math.random()<0.025? -0.45:0);
     lamps[i].L.intensity = lamps[i].base * Math.max(0.2, f);
   }
+  // 镜子：进度→清晰（脏雾渐退、镜中人渐显）
+  mirror.clarity += (mirror.progress - mirror.clarity) * Math.min(1, dt*1.8);
+  selfMat.opacity = 0.1 + 0.9*mirror.clarity;
+  const cc = 0.5 + 0.5*mirror.clarity; selfMat.color.setRGB(cc*0.88, cc*0.95, cc);
+  grimeMat.opacity = 0.9 - 0.66*mirror.clarity;
+  mglow.intensity = 0.9 + 0.9*mirror.clarity;
   updatePrompt();
   composer.render();
 }
@@ -388,7 +492,7 @@ $("#goBtn").addEventListener("click", () => {
 // 兜底：贴图若卡住，3.5s 后也放行
 setTimeout(()=>{ const b=$("#goBtn"); if(b.disabled){ b.disabled=false; b.textContent="进 入 走 廊"; } }, 3500);
 
-window.__fp = { scene, camera, renderer, composer, doorObjs, keys, frame,
+window.__fp = { scene, camera, renderer, composer, doorObjs, keys, frame, mirror, visited, passThrough,
   set yaw(v){ yaw=v; applyLook(); }, get yaw(){return yaw;},
   set pitch(v){ pitch=v; applyLook(); }, start(){ started=true; } };
 </script>
