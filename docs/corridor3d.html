@@ -33,9 +33,17 @@
   #stub.show{opacity:1;pointer-events:auto;}
   #stub p{max-width:640px;line-height:2.1;letter-spacing:2px;color:#c8bca2;white-space:pre-line;
     text-shadow:0 2px 8px #000;font-size:17px;}
+  #restart{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:26px;text-align:center;padding:0 24px;background:rgba(0,0,0,.9);
+    opacity:0;pointer-events:none;transition:opacity .5s;}
+  #restart.show{opacity:1;pointer-events:auto;}
+  #restart p{max-width:560px;line-height:2;letter-spacing:2px;color:#cbbfa6;font-size:17px;text-shadow:0 2px 8px #000;}
+  #restart b{color:#e6c078;}
+  .rs-btns{display:flex;gap:18px;}
   .btn{padding:11px 30px;border:1px solid rgba(200,170,110,.5);border-radius:4px;background:rgba(30,24,15,.6);
     color:#e6d6ac;font-size:15px;letter-spacing:3px;cursor:pointer;}
   .btn:hover{background:rgba(60,48,28,.7);}
+  .btn.ghost{border-color:rgba(150,140,120,.4);color:#a99;background:rgba(20,18,14,.5);}
   /* 点击开始 / 加载 */
   #gate{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:20px;background:#050506;text-align:center;transition:opacity .8s;}
@@ -65,6 +73,8 @@
 <div id="hint">点击画面进入 · WASD / 方向键 走动 · 鼠标转头 · 看着发光的门按 E 进入</div>
 <div id="prompt"></div>
 <div id="stub"><p id="stubText"></p><button class="btn" id="stubBack">回 到 走 廊</button></div>
+<div id="restart"><p>这是你走出来的门——觉醒室。<br>回去会<b>重新开始本局</b>，走廊里的进度将清空。</p>
+  <div class="rs-btns"><button class="btn" id="rsYes">重 新 开 始</button><button class="btn ghost" id="rsNo">留 在 走 廊</button></div></div>
 <div id="pad"><i></i></div>
 <div id="eBtn">E</div>
 <div id="gate">
@@ -102,7 +112,7 @@ scene.background = new THREE.Color(0x040405);
 scene.fog = new THREE.FogExp2(0x05060a, 0.026);
 
 const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.05, 120);
-camera.position.set(0, 1.62, 1.5);
+camera.position.set(0, 1.62, 0.6);   // 起点靠前，身后留出「觉醒室」那扇开着的门
 
 // ===== 走廊尺寸 =====
 const HW = 3, H = 4, Z0 = 2, Z1 = -42, LEN = Z0 - Z1, MZ = (Z0 + Z1) / 2;
@@ -208,6 +218,27 @@ for (const d of DOORS) {
   doorObjs.push({ d, x:wx, z:d.z });
 }
 
+// ===== 你走出来的那扇门（觉醒室）——开着的；进它 = 重新开始本局 =====
+{
+  const ox = 0.55;
+  const g = new THREE.Group(); g.position.set(ox, 0, Z0); g.rotation.y = Math.PI; scene.add(g);
+  const jamb = new THREE.Mesh(new THREE.BoxGeometry(DW+0.36, DH+0.32, 0.34),
+    new THREE.MeshStandardMaterial({ color:0x2a2620, roughness:.95, metalness:.05 }));
+  jamb.position.set(0, (DH+0.32)/2, -0.15); g.add(jamb);
+  // 门洞里的黑，透出觉醒室残留的暖微光
+  const inside = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH), new THREE.MeshBasicMaterial({ color:0x080604 }));
+  inside.position.set(0, DH/2, -0.02); g.add(inside);
+  const warm = new THREE.PointLight(0xffab55, 1.5, 6.5, 2.2); warm.position.set(0, 1.5, -0.7); g.add(warm);
+  // 敞开的门板（铰链在左，朝走廊里转开）
+  const hinge = new THREE.Group(); hinge.position.set(-DW/2, 0, 0.07); g.add(hinge);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(DW, DH, 0.08), doorMetal);
+  leaf.position.set(DW/2, DH/2, 0); leaf.castShadow = true; hinge.add(leaf);
+  const handle2 = new THREE.Mesh(new THREE.BoxGeometry(0.07,0.22,0.09), boltMetal);
+  handle2.position.set(DW-0.18, DH*0.42, 0.09); hinge.add(handle2);
+  hinge.rotation.y = 1.95;   // 门开着
+  doorObjs.push({ d:{ name:"觉醒室", prompt:"按 E 回到觉醒室 · 重新开始本局", origin:true }, x:ox, z:Z0 });
+}
+
 // ===== 灯光 =====
 scene.add(new THREE.AmbientLight(0x2c3038, 2.6));
 const lamps = [];
@@ -279,15 +310,20 @@ function updatePrompt(){
     if(facing>0.55){ const score=facing*(1-dist/3.4); if(score>bestScore){bestScore=score;near=o;} }
   }
   if(near!==atDoor){ atDoor=near;
-    if(near){ promptEl.textContent="按 E 进入 · "+near.d.name; promptEl.classList.add("show"); }
+    if(near){ promptEl.textContent = near.d.prompt || ("按 E 进入 · "+near.d.name); promptEl.classList.add("show"); }
     else promptEl.classList.remove("show"); }
 }
 function tryEnter(){ if(entering||!atDoor) return; entering=true; for(const k in keys)keys[k]=false;
   padVec={x:0,y:0}; promptEl.classList.remove("show");
-  $("#stubText").textContent=atDoor.d.stub; stubEl.classList.add("show");
   if(document.pointerLockElement) document.exitPointerLock();
+  if(atDoor.d.origin){ $("#restart").classList.add("show"); return; }   // 觉醒室门 → 问是否重新开始
+  $("#stubText").textContent=atDoor.d.stub; stubEl.classList.add("show");
 }
 $("#stubBack").addEventListener("click", ()=>{ stubEl.classList.remove("show");
+  setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
+// 重新开始确认
+$("#rsYes").addEventListener("click", ()=>{ location.href="index.html?new=1"; });
+$("#rsNo").addEventListener("click", ()=>{ $("#restart").classList.remove("show");
   setTimeout(()=>{ entering=false; atDoor=null; }, 300); });
 
 // ===== 循环 =====

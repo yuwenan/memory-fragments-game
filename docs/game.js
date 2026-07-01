@@ -225,6 +225,9 @@ function init() {
       else if (e.key === "Backspace") clearCode();
     }
   });
+
+  // 从 3D 走廊那扇「觉醒室」门回来重新开始：?new=1 → 直接新开一局
+  if (new URLSearchParams(location.search).get("new")) newGame();
 }
 
 // 房间状态背景：解开柜子后切到开柜版
@@ -232,12 +235,13 @@ function updateRoomBg() {
   const img = state.cabinetSolved ? "room01_bg_open.jpg" : "room01_bg.jpg";
   bgLayer.style.backgroundImage = `url("${BG}${img}")`;
 }
+const CORRIDOR_URL = "corridor3d.html";   // 第一人称 3D 走廊（独立页）
 function newGame() { clearSave(); resetState(); enterRoom(true); }
 function continueGame() {
-  applySave(loadSave());
-  if (state.reachedCorridor) { initAmbient(); titleEl.style.opacity = "0"; stopTitleFX();
-    setTimeout(() => { titleEl.classList.add("hidden"); enterCorridor(); }, 800); }
-  else enterRoom(false);
+  const s = loadSave();
+  if (s && s.reachedCorridor) { location.href = CORRIDOR_URL; return; }  // 已到走廊 → 直接进 3D 走廊
+  applySave(s);
+  enterRoom(false);
 }
 function enterRoom(isNew) {
   initAmbient(); // 必须在点击手势内创建 AudioContext
@@ -512,14 +516,14 @@ function winGame() {
   playExit();
 }
 
-// ===== 出门过场 → 走廊中枢 =====
-// 定格「门开」房间图 → 镜头推进右侧开着的门 → 收黑 → 走廊
+// ===== 出门过场 → 第一人称 3D 走廊（独立页）=====
+// 定格「门开」房间图 → 镜头推进右侧开着的门 → 收黑 → 跳转 3D 走廊
 function playExit() {
   playSfx("door");
   exitSeq.classList.remove("hidden");
   requestAnimationFrame(() => exitSeq.classList.add("go"));
   setTimeout(() => playSfx("clunk"), 2300); // 铁门在身后合拢
-  setTimeout(enterCorridor, 2850);
+  setTimeout(() => { location.href = CORRIDOR_URL; }, 2850);
 }
 
 // 走廊三扇亮门（颜色暗示门后世界；房间内容待建）。热点矩形（点击）+ 地面坐标(u,v) + 进门占位文案
