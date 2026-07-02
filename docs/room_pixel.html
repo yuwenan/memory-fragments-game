@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>记忆碎片 · 幽蓝的门后</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#bfe3ff;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#02050a;}
+  #c2d{image-rendering:pixelated;image-rendering:crisp-edges;background:#050b14;
+    box-shadow:0 0 90px rgba(40,120,220,.18);}
+  /* CRT 氛围 */
+  #scan{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.16;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.55) 2px 3px);}
+  #vig{position:fixed;inset:0;z-index:6;pointer-events:none;
+    background:radial-gradient(ellipse 74% 68% at 50% 48%,transparent 46%,rgba(0,4,12,.72) 100%);}
+  #tag{position:fixed;left:14px;top:12px;z-index:10;font-size:12px;letter-spacing:1px;color:#3f5b78;pointer-events:none;}
+  /* 顶部字幕 */
+  #cap{position:fixed;left:0;right:0;top:9%;z-index:10;text-align:center;font-size:15px;letter-spacing:3px;
+    color:#9fd2ff;text-shadow:0 0 12px rgba(80,170,255,.5),0 2px 8px #000;opacity:0;transition:opacity .6s;pointer-events:none;}
+  #cap.show{opacity:1;}
+  /* 交互提示 */
+  #prompt{position:fixed;left:50%;top:60%;z-index:9;transform:translateX(-50%);padding:8px 18px;
+    border:1px solid rgba(90,170,255,.5);border-radius:24px;background:rgba(6,14,26,.85);font-size:15px;
+    letter-spacing:2px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 24px rgba(70,160,255,.18);
+    opacity:0;pointer-events:none;transition:opacity .2s;}
+  #prompt.show{opacity:1;}
+  /* 像素对话框 */
+  #dlg{position:fixed;left:50%;bottom:9%;z-index:12;transform:translateX(-50%);width:min(560px,86vw);
+    border:2px solid #3d7fbf;background:rgba(4,12,24,.94);padding:16px 20px 12px;
+    box-shadow:0 0 0 2px #0a1a2e,0 8px 30px rgba(0,0,0,.7);display:none;}
+  #dlg.show{display:block;}
+  #dlg .who{font-size:12px;letter-spacing:3px;color:#5fd7e8;margin-bottom:8px;}
+  #dlg .txt{font-size:16px;line-height:1.9;letter-spacing:1.5px;color:#d8ecff;min-height:3.6em;white-space:pre-line;}
+  #dlg .nxt{text-align:right;font-size:12px;color:#4d7ba6;letter-spacing:2px;animation:blink 1.1s steps(2) infinite;}
+  @keyframes blink{50%{opacity:.15;}}
+  /* 信号丢失（死亡） */
+  #dead{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px;background:#04080f;}
+  #dead.show{display:flex;}
+  #dead .noise{position:absolute;inset:0;opacity:.5;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:tv .12s steps(2) infinite;}
+  @keyframes tv{0%{transform:translate(0,0)}50%{transform:translate(-4%,3%)}100%{transform:translate(3%,-4%)}}
+  #dead .dt{position:relative;font-size:22px;letter-spacing:8px;color:#e8f4ff;text-shadow:0 0 18px rgba(120,200,255,.8);}
+  #dead .ds{position:relative;font-size:12px;letter-spacing:4px;color:#5b83a8;}
+  /* 记忆闪回（幽蓝主题，同暖房结构） */
+  #flash{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 40%,#0e2238,#02060c 75%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;padding:0 26px;
+    opacity:0;pointer-events:none;transition:opacity 1.2s;}
+  #flash.show{opacity:1;pointer-events:auto;}
+  #flash .fk{font-size:14px;letter-spacing:6px;color:#4f8fc0;}
+  #flash .ft{max-width:600px;font-size:19px;line-height:2.2;letter-spacing:2px;color:#cfe6ff;
+    white-space:pre-line;min-height:10em;text-shadow:0 2px 10px #000;}
+  #flash .fb{opacity:0;transition:opacity 1s;}
+  #flash .fb.show{opacity:1;}
+  .btn{padding:11px 30px;border:1px solid rgba(110,180,255,.5);border-radius:4px;background:rgba(10,24,42,.6);
+    color:#bfe0ff;font-size:15px;letter-spacing:3px;cursor:pointer;}
+  .btn:hover{background:rgba(20,44,74,.7);}
+  /* 进门 → 开机画面 */
+  #gate{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;background:#030609;text-align:center;transition:opacity .8s;}
+  #gate.gone{opacity:0;pointer-events:none;}
+  #gate .s{font-size:13px;letter-spacing:3px;color:#4a6b8c;}
+  #gate .go{margin-top:4px;padding:12px 34px;border:1px solid rgba(110,180,255,.55);border-radius:4px;
+    background:rgba(10,24,42,.5);color:#bfe0ff;font-size:15px;letter-spacing:4px;cursor:pointer;}
+  #boot{position:fixed;inset:0;z-index:39;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:22px;background:#04101f;text-align:center;}
+  #boot.show{display:flex;}
+  #boot .b1{font-size:15px;letter-spacing:6px;color:#7fc4ff;text-shadow:0 0 14px rgba(90,180,255,.7);}
+  #boot .b2{font-size:20px;letter-spacing:5px;color:#e6f3ff;animation:blink 1s steps(2) infinite;}
+  #boot .b3{font-size:12px;letter-spacing:3px;color:#3f6b94;}
+  /* 触屏按钮 */
+  .tb{position:fixed;z-index:11;width:64px;height:64px;border-radius:12px;display:none;align-items:center;justify-content:center;
+    border:1px solid rgba(110,180,255,.35);background:rgba(8,20,36,.5);color:#bfe0ff;font-size:22px;touch-action:none;user-select:none;}
+  #bL{left:24px;bottom:36px;} #bR{left:104px;bottom:36px;} #bJ{right:24px;bottom:36px;} #bE{right:24px;bottom:116px;font-size:18px;}
+  @media (pointer:coarse){.tb{display:flex;}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c2d" width="320" height="176"></canvas></div>
+<div id="scan"></div><div id="vig"></div>
+<div id="tag">幽蓝的门后 · 存档 7931</div>
+<div id="cap"></div>
+<div id="prompt"></div>
+<div id="dlg"><div class="who">？？？</div><div class="txt"></div><div class="nxt">▼ 按 E 继续</div></div>
+<div id="dead"><div class="noise"></div><div class="dt" id="deadT">信 号 丢 失</div><div class="ds" id="deadS">SIGNAL LOST · 正在读取存档 7931</div></div>
+<div id="flash">
+  <div class="fk">记 忆 碎 片</div>
+  <p class="ft" id="flashText"></p>
+  <button class="btn fb" id="flashBack">收 起 这 段 记 忆</button>
+</div>
+<div id="gate">
+  <div class="s">幽 蓝 的 门 后</div>
+  <button class="go" id="goBtn">推 门 进 去</button>
+  <div class="s">门缝里的光一闪一闪，像老式屏幕</div>
+</div>
+<div id="boot"><div class="b1">MEMORY FRAGMENTS · 存 档 7931</div><div class="b2">▶ 继 续 游 戏</div><div class="b3">上次游玩：数据损坏</div></div>
+<div class="tb" id="bL">◀</div><div class="tb" id="bR">▶</div><div class="tb" id="bJ">▲</div><div class="tb" id="bE">E</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const cv = $("#c2d"), ctx = cv.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+const W = 320, H = 176, TILE = 8;
+
+// ===== 画布自适应（保持像素整数倍缩放） =====
+function fit(){
+  const s = Math.max(1, Math.floor(Math.min(innerWidth/W, innerHeight/H)));
+  cv.style.width = W*s+"px"; cv.style.height = H*s+"px";
+}
+addEventListener("resize", fit); fit();
+
+// ===== 关卡（# 实心砖 · H 暗门砖(可穿) · . 空） =====
+const COLS = 150, ROWS = 22;
+const grid = Array.from({length:ROWS}, () => Array(COLS).fill("."));
+const fill = (c0,c1,r0,r1,ch) => { for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++) grid[r][c]=ch; };
+fill(0,COLS-1,19,21,"#");                 // 地面
+fill(34,37,19,21,"."); fill(48,52,19,21,"."); fill(100,103,19,21,".");  // 深坑
+fill(12,16,16,16,"#"); fill(22,26,14,14,"#");                            // 起步平台
+fill(56,59,16,16,"#"); fill(60,62,13,13,"#"); fill(62,64,10,10,"#");    // 高墙前的爬升
+fill(66,72,8,18,"#");                     // 高墙（必须翻过去）
+fill(68,71,14,18,".");                    // 墙里的密室
+fill(66,67,16,18,"H");                    // 暗门：看着是墙，走得进去
+fill(75,78,12,12,"#");                    // 墙后落脚
+fill(95,99,16,16,"#"); fill(105,109,13,13,"#"); fill(112,115,16,16,"#");
+fill(118,121,16,16,"#"); fill(123,126,14,14,"#");
+fill(128,137,12,21,"#");                  // 终点高台（「家」在上面）
+const solid = (px,py) => { const c=px/TILE|0, r=py/TILE|0;
+  if(c<0||c>=COLS) return true; if(r<0||r>=ROWS) return false; return grid[r][c]==="#"; };
+
+// 密室范围（怪物进不来）
+const CHAMBER = { x0:66*TILE, x1:72*TILE, y0:14*TILE, y1:19*TILE };
+const inChamber = (x,y) => x>CHAMBER.x0 && x<CHAMBER.x1 && y>CHAMBER.y0 && y<=CHAMBER.y1+2;
+
+// ===== 像素画（字符画 → 离屏画布） =====
+const PAL = { K:"#2b1c12", S:"#eab98a", O:"#e07b2a", P:"#2e4a68", B:"#171310", W:"#ffffff",
+              C:"#2d5560", D:"#1c3a44", G:"#6fe8ff", R:"#7a3b2a", Y:"#caa25a", L:"#ffd97a",
+              T:"#3a2417", F:"#7defff", w:"#e9f7ff" };
+function sprite(rows){
+  const h=rows.length, w=rows[0].length, off=document.createElement("canvas");
+  off.width=w; off.height=h; const o=off.getContext("2d");
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const ch=rows[y][x]; if(ch!=="."){ o.fillStyle=PAL[ch]||"#f0f"; o.fillRect(x,y,1,1); } }
+  return off;
+}
+const SP = {
+  stand: sprite([".KKKK...","KKKKKK..","KSSWSK..","KSSSSK..",".SSSS...",".OOOO...","OOOOOO..",".OOOO...",".PPPP...",".P..P...",".P..P...",".B..B..."]),
+  run:   sprite([".KKKK...","KKKKKK..","KSSWSK..","KSSSSK..",".SSSS...",".OOOO...","OOOOOO..",".OOOO...",".PPPP...","P....P..","P....P..","B....B.."]),
+  cat:   sprite([".C.....C..",".CC...CC..",".CCCCCCC..",".CGCCCCW..",".CCCCCCC..","..CCCCC...","..C.C.C..."]),
+  home:  sprite(["......RR......",".....RRRR.....","....RRRRRR....","...RRRRRRRR...","..RRRRRRRRRR..","..YYYYYYYYYY..","..YYLLYYLLYY..","..YYLLYYLLYY..","..YYYYYYYYYY..","..YYYYTTYYYY..","..YYYYTTYYYY.."]),
+  frag:  sprite(["..F..",".FwF.","FwwwF","FwwwF",".FwF.",".FwF.","..F..","..F.."]),
+};
+
+// ===== 状态 =====
+const START = { x: 4*TILE, y: 19*TILE };
+const player = { x:START.x, y:START.y, vx:0, vy:0, dir:1, ground:false, dead:false };
+let camX = 0, t = 0, started = false, frozen = true;
+const keys = {};
+let monster = { on:false, x:0, y:0, armed:true };
+let glitched = false, homeGone = false;
+let npcTalked = false, dlgOpen = false, dlgIdx = 0;
+let frag = { on:false, x:70.5*TILE, y:17.2*TILE, got:false };
+let chamberCapShown = false, monsterCapShown = false;
+const NPC = { x:69.5*TILE, y:19*TILE };
+const HOME = { x:130*TILE, y:12*TILE };
+
+// ===== 文案 =====
+const DLG_LINES = [
+  "你回来啦。\n这次，外面又吵成什么样了？",
+  "你每次躲进来，都坐在这儿，\n一直坐到天黑，一句话也不说。",
+  "这一关所有的暗门都是你找到的。\n连做游戏的人都不知道这一条。",
+  "……奇怪。\n我记得你的样子，记得清清楚楚。\n可你看我的眼神，越来越像在看一个陌生人。",
+  "拿去吧。你藏在这儿的东西。\n趁你还记得，你藏过它。",
+];
+const MEMORY = "门外的争吵声隔着一层木板，压得很低，又很尖。\n你把音量调大，屏幕的蓝光照在脸上。\n在这里你跑得快、跳得高，谁也追不上你。\n只有它，记得你所有的秘密通道。\n\n碎片的背面，有一行像素小字：\n「样本 7931 · 避难所 · 已录入」。\n连你逃跑的地方，他们也要拿走。";
+
+// ===== 输入 =====
+addEventListener("keydown", e => { const k=e.key.toLowerCase();
+  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)){ keys[k]=true; e.preventDefault(); }
+  if(k==="e"||k==="enter") act(); });
+addEventListener("keyup", e => keys[e.key.toLowerCase()]=false);
+const bindBtn = (id, key) => { const b=$(id);
+  b.addEventListener("pointerdown", e=>{ e.preventDefault(); keys[key]=true; });
+  b.addEventListener("pointerup",   e=>{ e.preventDefault(); keys[key]=false; });
+  b.addEventListener("pointercancel", ()=>keys[key]=false); };
+bindBtn("#bL","a"); bindBtn("#bR","d"); bindBtn("#bJ","w");
+$("#bE").addEventListener("pointerdown", e=>{ e.preventDefault(); act(); });
+$("#dlg").addEventListener("click", act);
+
+// ===== 字幕 =====
+let capTimer = null;
+function caption(text, ms){
+  const el=$("#cap"); el.textContent=text; el.classList.add("show");
+  clearTimeout(capTimer); capTimer=setTimeout(()=>el.classList.remove("show"), ms||3200);
+}
+
+// ===== 对话 / 碎片 / 闪回 =====
+function nearNPC(){ return Math.hypot(player.x-NPC.x, player.y-NPC.y) < 20; }
+function act(){
+  if(frozen || player.dead || $("#flash").classList.contains("show")) return;
+  if(dlgOpen){
+    dlgIdx++;
+    if(dlgIdx >= DLG_LINES.length){ dlgOpen=false; $("#dlg").classList.remove("show");
+      npcTalked=true; frag.on=true; caption("它吐出一块发着光的东西，落在地上", 3600); }
+    else $("#dlg .txt").textContent = DLG_LINES[dlgIdx];
+    return;
+  }
+  if(nearNPC() && !npcTalked){
+    dlgOpen=true; dlgIdx=0; $("#dlg .txt").textContent=DLG_LINES[0]; $("#dlg").classList.add("show");
+    $("#prompt").classList.remove("show");
+  }
+}
+function collectFrag(){
+  frag.got=true; frag.on=false; frozen=true;
+  const fEl=$("#flash"); fEl.classList.add("show");
+  const ft=$("#flashText"); ft.textContent="";
+  let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
+    if(i>=MEMORY.length){ clearInterval(timer); setTimeout(()=>$("#flashBack").classList.add("show"),500); } }, 42);
+}
+$("#flashBack").addEventListener("click", ()=>{
+  try{ const c=JSON.parse(localStorage.getItem("mf3d_cleared")||"[]");
+    if(!c.includes("pixel")){ c.push("pixel"); localStorage.setItem("mf3d_cleared", JSON.stringify(c)); } }catch(e){}
+  location.href="corridor3d.html";
+});
+
+// ===== 死亡（信号丢失） =====
+function die(reason){
+  if(player.dead) return; player.dead=true;
+  $("#deadT").textContent = reason==="fall" ? "掉 出 了 这 一 关" : "信 号 丢 失";
+  $("#dead").classList.add("show");
+  setTimeout(()=>{
+    player.x=START.x; player.y=START.y; player.vx=player.vy=0; player.dir=1;
+    monster.on=false; monster.armed=true;      // 重新武装，再过中段再出现
+    $("#dead").classList.remove("show"); player.dead=false;
+  }, 1400);
+}
+
+// ===== 「家」的崩坏 =====
+function glitchHome(){
+  glitched=true;
+  caption("存 档 损 坏 ：找 不 到 『 家 』", 3600);
+  setTimeout(()=>{ homeGone=true; }, 1200);
+  setTimeout(()=>caption("……回头。墙的哪里，透着风。", 4200), 4000);
+}
+
+// ===== 物理 =====
+const SPEED=85, JUMPV=225, GRAV=640;
+function step(dt){
+  if(frozen || player.dead || dlgOpen) return;
+  const L=keys["a"]||keys["arrowleft"], R=keys["d"]||keys["arrowright"];
+  const J=keys["w"]||keys["arrowup"]||keys[" "];
+  player.vx = (R?SPEED:0) - (L?SPEED:0);
+  if(player.vx>0) player.dir=1; else if(player.vx<0) player.dir=-1;
+  if(J && player.ground){ player.vy=-JUMPV; player.ground=false; }
+
+  // X 轴
+  let nx = player.x + player.vx*dt;
+  const hw=3;
+  if(player.vx>0 && (solid(nx+hw, player.y-1)||solid(nx+hw, player.y-11))) nx = ((nx+hw)/TILE|0)*TILE - hw - 0.01;
+  if(player.vx<0 && (solid(nx-hw, player.y-1)||solid(nx-hw, player.y-11))) nx = ((nx-hw)/TILE|0)*TILE + TILE + hw + 0.01;
+  player.x = Math.max(hw, Math.min(COLS*TILE-hw, nx));
+
+  // Y 轴
+  player.vy += GRAV*dt;
+  let ny = player.y + player.vy*dt;
+  player.ground = false;
+  if(player.vy>0 && (solid(player.x-2.5, ny)||solid(player.x+2.5, ny))){
+    ny = (ny/TILE|0)*TILE - 0.01; player.vy=0; player.ground=true;
+  }
+  if(player.vy<0 && (solid(player.x-2.5, ny-12)||solid(player.x+2.5, ny-12))){
+    ny = ((ny-12)/TILE|0)*TILE + TILE + 12 + 0.01; player.vy=0;
+  }
+  player.y = ny;
+  if(player.y > ROWS*TILE + 40) return die("fall");
+
+  // 怪物
+  if(monster.armed && !monster.on && player.x > 30*TILE && !inChamber(player.x,player.y)){
+    monster.on=true; monster.armed=false;
+    monster.x=player.x-150; monster.y=player.y-40;
+    if(!monsterCapShown){ monsterCapShown=true; caption("画面里渗进了不该有的杂讯——快跑", 3400); }
+  }
+  if(monster.on){
+    const chase = glitched?74:58;
+    let tx=player.x, ty=player.y-6;
+    if(inChamber(player.x,player.y)){ tx=CHAMBER.x0-14; ty=17*TILE;  // 进不来，在墙外徘徊
+      if(!chamberCapShown){ chamberCapShown=true; caption("杂讯在墙外徘徊……它进不来这里", 3600); } }
+    const dx=tx-monster.x, dy=ty-monster.y, d=Math.hypot(dx,dy)||1;
+    monster.x += dx/d*chase*dt + (Math.random()-0.5)*1.6;
+    monster.y += dy/d*chase*dt + (Math.random()-0.5)*1.6;
+    if(inChamber(player.x,player.y)) monster.x = Math.min(monster.x, CHAMBER.x0-8);
+    if(Math.hypot(player.x-monster.x, (player.y-6)-monster.y) < 9) return die("noise");
+  }
+
+  // 「家」触发崩坏
+  if(!glitched && player.x>127*TILE && player.x<138*TILE && player.y<14*TILE) glitchHome();
+
+  // 碎片拾取
+  if(frag.on && !frag.got && Math.hypot(player.x-frag.x, (player.y-6)-frag.y)<10) collectFrag();
+
+  camX = Math.max(0, Math.min(COLS*TILE-W, player.x-140));
+}
+
+// ===== 提示 =====
+function updatePrompt(){
+  const el=$("#prompt");
+  if(frozen||player.dead||dlgOpen||$("#flash").classList.contains("show")){ el.classList.remove("show"); return; }
+  if(nearNPC() && !npcTalked){ el.textContent="按 E 和它说话"; el.classList.add("show"); }
+  else el.classList.remove("show");
+}
+
+// ===== 渲染 =====
+function hash(a,b){ let h=(a*374761393 + b*668265263)|0; h=(h^(h>>13))*1274126177; return ((h^(h>>16))>>>0)/4294967295; }
+function draw(){
+  // 背景：夜空渐变 + 远景剪影(视差) + 星
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#04101f"); g.addColorStop(.6,"#071726"); g.addColorStop(1,"#0a1d30");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(let i=0;i<40;i++){ const sx=(hash(i,7)*1600 - camX*0.15)%(W+40), sy=hash(i,13)*90;
+    ctx.fillStyle = `rgba(160,210,255,${0.25+0.5*hash(i,3)*(0.6+0.4*Math.sin(t*2+i))})`;
+    ctx.fillRect(((sx%(W+40))+W+40)%(W+40)-20|0, sy|0, 1,1); }
+  ctx.fillStyle="#0c2033";
+  for(let i=0;i<14;i++){ const bw=30+hash(i,1)*50, bh=30+hash(i,2)*55;
+    const bx=(i*110 - camX*0.3)%(COLS*TILE*0.3); ctx.fillRect(bx|0, H-24-bh, bw|0, bh|0); }
+
+  // 砖块
+  const c0=Math.max(0,camX/TILE|0), c1=Math.min(COLS-1,(camX+W)/TILE+1|0);
+  for(let r=0;r<ROWS;r++) for(let c=c0;c<=c1;c++){
+    const ch=grid[r][c]; if(ch===".") continue;
+    const x=c*TILE-camX|0, y=r*TILE;
+    const v=hash(c,r);
+    if(ch==="#"){
+      ctx.fillStyle = v<0.5?"#16324f":"#1a3a5a"; ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle="#2a5c8a"; ctx.fillRect(x,y,TILE,1);
+      ctx.fillStyle="#0d2338"; ctx.fillRect(x,y+TILE-1,TILE,1); ctx.fillRect(x+(v<0.5?3:5),y+2,1,TILE-3);
+    } else if(ch==="H"){
+      // 暗门砖：略暗 + 闪烁；「家」崩坏后闪得更凶、偶尔露出缝
+      const flick = Math.random()<(glitched?0.22:0.06);
+      ctx.fillStyle = flick ? "#0a1a2c" : "#142c46"; ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle="#234e78"; ctx.fillRect(x,y,TILE,1);
+      if(glitched && Math.random()<0.10){ ctx.fillStyle="#6fe8ff"; ctx.fillRect(x+TILE-1, y+2, 1, TILE-4); }
+    }
+  }
+  // 暗门缝里飘出的微光像素（一直有，给眼尖的人）
+  for(let i=0;i<3;i++){ const py=(16*TILE + ((t*14+i*11)%26)), px=66*TILE-2-camX + Math.sin(t*3+i*2)*2;
+    ctx.fillStyle=`rgba(111,232,255,${glitched?0.7:0.3})`; ctx.fillRect(px|0, py|0, 1,1); }
+
+  // 「家」
+  if(!homeGone){
+    ctx.drawImage(SP.home, HOME.x-camX|0, HOME.y-11|0);
+    const wob=0.5+0.5*Math.sin(t*2.4);
+    ctx.fillStyle=`rgba(255,217,122,${0.10+0.10*wob})`;
+    ctx.fillRect(HOME.x-camX-4|0, HOME.y-15|0, 22, 16);
+    if(glitched){ // 崩坏过程：雪花吃掉它
+      for(let i=0;i<60;i++){ ctx.fillStyle=Math.random()<0.5?"#9fb8cc":"#20313f";
+        ctx.fillRect(HOME.x-camX+Math.random()*14|0, HOME.y-11+Math.random()*11|0, 1,1); } }
+  } else {
+    for(let i=0;i<26;i++){ ctx.fillStyle=`rgba(140,170,190,${Math.random()*0.25})`;
+      ctx.fillRect(HOME.x-camX+Math.random()*14|0, HOME.y-11+Math.random()*11|0, 1,1); }
+  }
+
+  // NPC（呼吸 + 独眼发光）
+  const bob = Math.sin(t*2.2)>0?0:-1;
+  ctx.drawImage(SP.cat, NPC.x-5-camX|0, NPC.y-7+bob|0);
+  const ew=0.5+0.5*Math.sin(t*3.1);
+  ctx.fillStyle=`rgba(111,232,255,${0.25+0.35*ew})`; ctx.fillRect(NPC.x-4-camX|0, NPC.y-6|0, 3,3);
+
+  // 碎片
+  if(frag.on && !frag.got){
+    const fy = frag.y + Math.sin(t*3)*2;
+    ctx.fillStyle=`rgba(125,239,255,${0.16+0.12*Math.sin(t*4)})`;
+    ctx.fillRect(frag.x-6-camX|0, fy-7|0, 14,16);
+    ctx.drawImage(SP.frag, frag.x-2.5-camX|0, fy-4|0);
+  }
+
+  // 玩家
+  const spr = (Math.abs(player.vx)>1 && player.ground && (t*8|0)%2===0) ? SP.run : SP.stand;
+  ctx.save();
+  const px=player.x-camX;
+  if(player.dir<0){ ctx.translate(px+4, player.y-12); ctx.scale(-1,1); ctx.drawImage(spr,-4,0); }
+  else ctx.drawImage(spr, px-4|0, player.y-12|0);
+  ctx.restore();
+
+  // 杂讯怪：一团会呼吸的雪花
+  if(monster.on){
+    const R0=8+Math.sin(t*6)*1.5;
+    for(let i=0;i<46;i++){ const a=Math.random()*Math.PI*2, rr=Math.random()*R0;
+      const mx=monster.x+Math.cos(a)*rr-camX, my=monster.y+Math.sin(a)*rr*0.9;
+      ctx.fillStyle = Math.random()<0.75 ? `rgba(200,225,245,${0.15+Math.random()*0.6})` : "rgba(20,30,44,0.8)";
+      ctx.fillRect(mx|0,my|0,1,1); }
+    ctx.fillStyle="rgba(230,245,255,0.9)";
+    ctx.fillRect(monster.x-camX|0, monster.y|0, 2,2);
+  }
+}
+
+// ===== 主循环 =====
+let last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.033,(ts-last)/1000||0.016); last=ts; t+=dt;
+  step(dt); draw(); updatePrompt();
+}
+requestAnimationFrame(frame);
+
+// ===== 进门 → 开机 → 开始 =====
+$("#goBtn").addEventListener("click", ()=>{
+  $("#gate").classList.add("gone");
+  const boot=$("#boot"); boot.classList.add("show");
+  const go=()=>{ boot.classList.remove("show"); frozen=false; started=true;
+    caption("A / D 走 · W 跳 —— 这是你最熟悉的一关", 4200); };
+  const tm=setTimeout(go, 2200);
+  boot.addEventListener("click", ()=>{ clearTimeout(tm); go(); }, { once:true });
+});
+</script>
+</body>
+</html>

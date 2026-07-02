@@ -285,7 +285,7 @@ for (const d of DOORS) {
 // ===== 走廊尽头：镜子（镜像计划的终点）=====
 // 脏雾裂纹的镜面，里面站着「你/镜像」正面立绘；每通关一间房擦亮一分、脸清一分；全清才能穿过
 // 跨页进度：房间是独立页，通关记在 localStorage
-const ROOM_URLS = { warm:"room_warm.html" };   // pixel/cold 待建
+const ROOM_URLS = { warm:"room_warm.html", pixel:"room_pixel.html" };   // cold 待建
 const CLEARED = (()=>{ try{ return new Set(JSON.parse(localStorage.getItem("mf3d_cleared")||"[]")); }catch(e){ return new Set(); } })();
 function saveCleared(){ try{ localStorage.setItem("mf3d_cleared", JSON.stringify([...CLEARED])); }catch(e){} }
 const visited = CLEARED;   // 门口检测/文案沿用
