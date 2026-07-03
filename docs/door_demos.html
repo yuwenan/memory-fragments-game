@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>记忆碎片 · 门的方向 Demo</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#e8dcc2;}
+  #c3d{position:fixed;inset:0;display:block;}
+  #vig{position:fixed;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse 72% 66% at 50% 46%,transparent 44%,rgba(0,0,0,.6) 100%);}
+  #grain{position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:grain .5s steps(2) infinite;}
+  @keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-6%,4%)}100%{transform:translate(4%,-5%)}}
+  #cross{position:fixed;left:50%;top:50%;z-index:8;width:5px;height:5px;margin:-2.5px;border-radius:50%;
+    background:rgba(240,230,200,.5);pointer-events:none;}
+  #bar{position:fixed;left:50%;top:16px;z-index:20;transform:translateX(-50%);display:flex;gap:10px;}
+  .vbtn{padding:9px 18px;border:1px solid rgba(220,190,130,.4);border-radius:4px;background:rgba(18,14,8,.78);
+    color:#cbb98d;font-size:13px;letter-spacing:2px;cursor:pointer;white-space:nowrap;}
+  .vbtn.on{background:rgba(70,52,26,.85);color:#ffe9b8;border-color:rgba(240,205,140,.8);}
+  #tip{position:fixed;left:0;right:0;bottom:26px;z-index:10;text-align:center;font-size:13px;letter-spacing:2px;
+    color:#8a7a54;pointer-events:none;text-shadow:0 2px 8px #000;}
+  #prompt{position:fixed;left:50%;top:58%;z-index:9;transform:translateX(-50%);padding:8px 18px;
+    border:1px solid rgba(220,190,130,.5);border-radius:24px;background:rgba(24,17,10,.82);font-size:15px;
+    letter-spacing:2px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;}
+  #prompt.show{opacity:1;}
+  #blk{position:fixed;inset:0;z-index:14;background:#000;opacity:0;pointer-events:none;transition:opacity 1.1s;}
+  #blk.show{opacity:1;}
+  #cap{position:fixed;left:0;right:0;top:12%;z-index:15;text-align:center;font-size:15px;letter-spacing:3px;
+    color:#e3d4b2;opacity:0;transition:opacity .7s;pointer-events:none;text-shadow:0 2px 10px #000;}
+  #cap.show{opacity:1;}
+  #pad{position:fixed;left:26px;bottom:32px;z-index:11;width:128px;height:128px;border-radius:50%;
+    border:1px solid rgba(220,190,140,.22);background:rgba(24,18,10,.32);touch-action:none;display:none;}
+  #pad i{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px;border-radius:50%;
+    background:rgba(220,185,120,.32);}
+  #eBtn{position:fixed;right:30px;bottom:60px;z-index:11;width:76px;height:76px;border-radius:50%;
+    border:1px solid rgba(220,185,120,.4);background:rgba(40,30,16,.5);color:#f0dcab;font-size:20px;
+    display:none;align-items:center;justify-content:center;touch-action:none;}
+  @media (pointer:coarse){#pad{display:block;}#eBtn{display:flex;}}
+</style>
+</head>
+<body>
+<canvas id="c3d"></canvas>
+<div id="vig"></div><div id="grain"></div><div id="cross"></div>
+<div id="bar">
+  <button class="vbtn on" data-v="A">A · 收容所铁门</button>
+  <button class="vbtn" data-v="B">B · 老公寓木门</button>
+  <button class="vbtn" data-v="C">C · 混凝土黑洞</button>
+</div>
+<div id="tip">点击画面锁定视角 · WASD 走动 · 走近门按 E 感受开门过场</div>
+<div id="prompt"></div>
+<div id="blk"></div>
+<div id="cap"></div>
+<div id="pad"><i></i></div>
+<div id="eBtn">E</div>
+
+<script type="importmap">
+{ "imports": { "three": "./assets/lib/three.module.js", "three/addons/": "./assets/lib/" }}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+const $ = s => document.querySelector(s);
+const QA = new URLSearchParams(location.search);
+const canvas = $("#c3d");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 80);
+let scene = new THREE.Scene();
+
+// ===== 贴图 =====
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+const texL = new THREE.TextureLoader();
+function pbr(name, repX, repY, tint){
+  const load = (suffix, srgb) => { const t = texL.load(`./assets/textures/${name}_${suffix}.jpg`);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repX, repY); t.anisotropy = maxAniso;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const m = new THREE.MeshStandardMaterial({ map:load("color",true), normalMap:load("normal",false),
+    roughnessMap:load("rough",false), roughness:1, metalness:0, color:tint, side:THREE.DoubleSide });
+  m.normalScale.set(0.7,0.7); return m;
+}
+
+// 斜纹警示条纹理
+function stripeTex(){
+  const cv=document.createElement("canvas"); cv.width=cv.height=64; const x=cv.getContext("2d");
+  x.fillStyle="#8f7a1c"; x.fillRect(0,0,64,64); x.fillStyle="#15130e";
+  for(let i=-64;i<128;i+=16){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+64,64); x.lineTo(i+72,64); x.lineTo(i+8,0); x.fill(); }
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,0.4); return t;
+}
+
+// ===== 变体构建 =====
+let doorHinge=null, doorLight=null, entering=false, variant="A";
+const V = {
+  A:{ fog:0.05, W:3.0, H:3.0, wallTint:0x8a8578, floorTint:0x6f6a5e, camY:1.6 },
+  B:{ fog:0.038, W:2.6, H:3.3, wallTint:0xb0a88e, floorTint:0x7d6b4e, camY:1.6 },
+  C:{ fog:0.075, W:2.4, H:4.2, wallTint:0x6f7276, floorTint:0x5a5c5e, camY:1.6 },
+};
+function clearScene(){
+  scene.traverse(o=>{ if(o.geometry) o.geometry.dispose();
+    if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose()); } });
+  scene = new THREE.Scene();
+}
+function build(v){
+  variant=v; clearScene(); entering=false; doorHinge=null;
+  document.querySelectorAll(".vbtn").forEach(b=>b.classList.toggle("on", b.dataset.v===v));
+  const cfg=V[v];
+  scene.background = new THREE.Color(0x030303);
+  scene.fog = new THREE.FogExp2(v==="B"?0x0d0a06:0x0a0a09, cfg.fog);
+  const LEN=16, HW=cfg.W/2, H=cfg.H;
+  const wallMat=pbr("wall",4,H/2.2,cfg.wallTint), floorMat=pbr("floor",2.2,9,cfg.floorTint);
+  const ceilMat=pbr("wall",3,6,0x55504a);
+  const mk=(mat,w,h,pos,rot)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
+    m.position.set(...pos); if(rot)m.rotation.set(...rot); m.receiveShadow=true; scene.add(m); return m; };
+  mk(floorMat, cfg.W, LEN, [0,0,-LEN/2+3], [-Math.PI/2,0,0]);
+  mk(ceilMat, cfg.W, LEN, [0,H,-LEN/2+3], [Math.PI/2,0,0]);
+  mk(wallMat, LEN, H, [ HW,H/2,-LEN/2+3], [0,-Math.PI/2,0]);
+  mk(wallMat, cfg.W, H, [0,H/2,3], [0,Math.PI,0]);
+  mk(wallMat, cfg.W, H, [0,H/2,-LEN+3], [0,0,0]);
+  // 左墙分两段留门洞区（门都开在左墙 z=-4 处）
+  const DZ=-4;
+  mk(wallMat, Math.abs(DZ-1.0-(-LEN+3)), H, [-HW,H/2,((DZ-1.0)+(-LEN+3))/2], [0,Math.PI/2,0]);
+  mk(wallMat, Math.abs(3-(DZ+1.0)), H, [-HW,H/2,(3+(DZ+1.0))/2], [0,Math.PI/2,0]);
+
+  const metal=(c,r,mt)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:mt});
+
+  if(v==="A"){
+    // ===== A 收容所铁门：深门洞 + 铆钉厚闸门 + 罩灯 =====
+    const AL=0.5;   // 门洞深
+    const inMat=pbr("wall",1.2,H/2.2,0x6e685c);
+    mk(inMat, AL, H, [-HW-AL/2, H/2, DZ-1.0+0.0], [0,Math.PI/2,0]);   // 洞内侧壁1
+    mk(inMat, AL, H, [-HW-AL/2, H/2, DZ+1.0], [0,Math.PI/2,0]);
+    // 侧壁封板
+    const side=new THREE.Mesh(new THREE.BoxGeometry(AL,H,0.06), inMat); side.position.set(-HW-AL/2,H/2,DZ-1.0); scene.add(side);
+    const side2=side.clone(); side2.position.z=DZ+1.0; scene.add(side2);
+    mk(inMat, 2.0, AL, [-HW-AL/2, H-0.01, DZ], [Math.PI/2,Math.PI/2,0]); // 洞顶
+    mk(pbr("floor",0.8,1.4,0x5f5a50), AL, 2.0, [-HW-AL/2, 0.01, DZ], [-Math.PI/2,Math.PI/2,0]);
+    // 厚重门框
+    const jamb=metal(0x2c2a24,.6,.55);
+    for(const [w,h,d,x,y,z] of [[0.14,2.5,0.16,-HW-AL+0.07,1.25,DZ-0.62],[0.14,2.5,0.16,-HW-AL+0.07,1.25,DZ+0.62],[0.14,0.16,1.4,-HW-AL+0.07,2.42,DZ]])
+      { const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),jamb); m.position.set(x,y,z); m.castShadow=true; scene.add(m); }
+    // 门板（铰链组）
+    doorHinge=new THREE.Group(); doorHinge.position.set(-HW-AL+0.10, 0, DZ-0.55); scene.add(doorHinge);
+    const leafMat=metal(0x4a453c,.46,.78);
+    const leaf=new THREE.Mesh(new THREE.BoxGeometry(0.09,2.32,1.1), leafMat);
+    leaf.position.set(0,1.16,0.55); leaf.castShadow=true; doorHinge.add(leaf);
+    // 铆钉
+    const boltM=metal(0x23211c,.5,.85);
+    for(const sz of [0.12,0.98]) for(let i=0;i<6;i++){
+      const b=new THREE.Mesh(new THREE.SphereGeometry(0.022,8,6), boltM);
+      b.position.set(0.05, 0.18+i*0.4, sz); doorHinge.add(b); }
+    // 横向加强筋 + 把手 + 警示条
+    for(const yy of [0.72,1.62]){ const rib=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.1,1.02), boltM);
+      rib.position.set(0.065,yy,0.55); doorHinge.add(rib); }
+    const handle=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.3,0.06), boltM);
+    handle.position.set(0.09,1.12,0.98); doorHinge.add(handle);
+    const stripe=new THREE.Mesh(new THREE.PlaneGeometry(1.04,0.14),
+      new THREE.MeshStandardMaterial({ map:stripeTex(), roughness:.8 }));
+    stripe.rotation.y=Math.PI/2; stripe.position.set(0.096,0.3,0.55); doorHinge.add(stripe);
+    // 门顶罩灯（真往下打光）
+    const cageM=metal(0x1d1b17,.5,.8);
+    const lampBase=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.06,0.3), cageM);
+    lampBase.position.set(-HW-0.06,2.62,DZ); scene.add(lampBase);
+    const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.045,10,8),
+      new THREE.MeshBasicMaterial({color:0xffd9a0})); bulb.position.set(-HW-0.12,2.52,DZ); scene.add(bulb);
+    for(let i=0;i<4;i++){ const bar=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.14,0.012), cageM);
+      bar.position.set(-HW-0.12+Math.cos(i*Math.PI/2)*0.06, 2.5, DZ+Math.sin(i*Math.PI/2)*0.06); scene.add(bar); }
+    const spot=new THREE.SpotLight(0xffc98a, 10, 6, Math.PI/3.6, 0.45, 1.5);
+    spot.position.set(-HW+0.42,2.55,DZ); spot.target.position.set(-HW-0.45,0.6,DZ);
+    spot.castShadow=true; scene.add(spot); scene.add(spot.target);
+    const mouth=new THREE.PointLight(0xffc98a, 1.1, 3.5, 2); mouth.position.set(-HW-0.15,1.7,DZ); scene.add(mouth);
+    // 门里的光（开门时涌出）
+    doorLight=new THREE.PointLight(0xffb45e, 0, 7, 1.8); doorLight.position.set(-HW-AL-0.6,1.4,DZ); scene.add(doorLight);
+    // 管线沿顶
+    const pipeM=metal(0x33302a,.45,.7);
+    for(const px of [0.35,0.52]){ const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,LEN,10), pipeM);
+      pipe.rotation.x=Math.PI/2; pipe.position.set(HW-px, H-0.18, -LEN/2+3); scene.add(pipe); }
+    // 走廊主灯
+    const pl=new THREE.PointLight(0xffd6a2, 1.6, 12, 2); pl.position.set(0,H-0.4,0); scene.add(pl);
+    const pl2=new THREE.PointLight(0xcfd8e8, 0.7, 10, 2); pl2.position.set(0,H-0.5,-9); scene.add(pl2);
+    scene.add(new THREE.AmbientLight(0x2c2a24, 1.4));
+  }
+
+  if(v==="B"){
+    // ===== B 老公寓木门：奶白板条门 + 磨砂亮窗 + 黄铜牌 =====
+    const paint=new THREE.MeshStandardMaterial({color:0xcfc4a6, roughness:.55});
+    const paintD=new THREE.MeshStandardMaterial({color:0xb4a884, roughness:.6});
+    // 墙裙
+    const skirt=new THREE.Mesh(new THREE.BoxGeometry(0.04,1.0,LEN), paintD);
+    skirt.position.set(-HW+0.02,0.5,-LEN/2+3); scene.add(skirt);
+    const skirt2=skirt.clone(); skirt2.position.x=HW-0.02; scene.add(skirt2);
+    // 门框
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(0.12,2.75,1.28), paint);
+    frame.position.set(-HW+0.02,1.375,DZ); frame.castShadow=true; scene.add(frame);
+    const hole=new THREE.Mesh(new THREE.BoxGeometry(0.14,2.55,1.08),
+      new THREE.MeshBasicMaterial({color:0x060504})); hole.position.set(-HW+0.02,1.275,DZ); scene.add(hole);
+    // 门板（两块凹板）
+    doorHinge=new THREE.Group(); doorHinge.position.set(-HW+0.06,0,DZ-0.52); scene.add(doorHinge);
+    const leaf=new THREE.Mesh(new THREE.BoxGeometry(0.06,2.45,1.04), paint);
+    leaf.position.set(0,1.225,0.52); leaf.castShadow=true; doorHinge.add(leaf);
+    for(const [yy,hh] of [[0.75,0.9],[1.85,0.85]]){
+      const inset=new THREE.Mesh(new THREE.BoxGeometry(0.02,hh,0.74), paintD);
+      inset.position.set(0.035,yy,0.52); doorHinge.add(inset); }
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(0.042,12,10), metal(0x9a7f3c,.28,.95));
+    knob.position.set(0.075,1.15,0.94); doorHinge.add(knob);
+    const plate=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.09,0.2), metal(0x8f7838,.35,.9));
+    plate.position.set(0.045,1.9,0.52); doorHinge.add(plate);
+    // 磨砂亮窗（门上部,里面亮着）
+    const frosted=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.5),
+      new THREE.MeshStandardMaterial({color:0xfff1cf, emissive:0xffdf9e, emissiveIntensity:1.6, roughness:.9}));
+    frosted.rotation.y=Math.PI/2; frosted.position.set(0.062,2.02,0.52); doorHinge.add(frosted);
+    const winFrame=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.56,0.68), paintD);
+    winFrame.position.set(0.03,2.02,0.52); doorHinge.add(winFrame);
+    doorLight=new THREE.PointLight(0xffd79a, 0.9, 5, 2); doorLight.position.set(-HW-0.5,1.6,DZ); scene.add(doorLight);
+    // 壁灯一对
+    for(const dz of [DZ-1.6, DZ+1.6]){
+      const sconce=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.08,0.16,10,1,true),
+        new THREE.MeshStandardMaterial({color:0xd8c9a2, emissive:0x6b4d1c, emissiveIntensity:1, side:THREE.DoubleSide}));
+      sconce.position.set(-HW+0.09,1.95,dz); scene.add(sconce);
+      const sl=new THREE.PointLight(0xffd9a2, 1.0, 4.5, 2); sl.position.set(-HW+0.16,2.0,dz); scene.add(sl);
+    }
+    // 顶灯（暖,轻微摇摆的吊线灯）
+    const pl=new THREE.PointLight(0xffdcae, 1.5, 12, 2); pl.position.set(0,H-0.5,-1); scene.add(pl);
+    const pl2=new THREE.PointLight(0xffd0a0, 0.8, 10, 2); pl2.position.set(0,H-0.6,-8); scene.add(pl2);
+    scene.add(new THREE.AmbientLight(0x2e2a20, 1.5));
+  }
+
+  if(v==="C"){
+    // ===== C 混凝土黑洞：一米深门洞全黑 + 一条漏光缝 =====
+    const conc=pbr("floor",1.6,2.6,0x777a7e);   // 混凝土质感借用地面贴图
+    const AL=1.0;
+    // 洞内壁（全暗）
+    const darkM=new THREE.MeshStandardMaterial({color:0x141414, roughness:.95});
+    mk(conc, AL, H, [-HW-AL/2, H/2, DZ-0.75], [0,Math.PI/2,0]);
+    mk(conc, AL, H, [-HW-AL/2, H/2, DZ+0.75], [0,Math.PI/2,0]);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(AL,0.08,1.5), darkM); top.position.set(-HW-AL/2,2.62,DZ); scene.add(top);
+    mk(new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:1}), AL, 1.5, [-HW-AL/2, 0.005, DZ], [-Math.PI/2,Math.PI/2,0]);
+    // 尽头黑门板
+    doorHinge=new THREE.Group(); doorHinge.position.set(-HW-AL,0,DZ-0.7); scene.add(doorHinge);
+    const leaf=new THREE.Mesh(new THREE.BoxGeometry(0.07,2.55,1.38),
+      new THREE.MeshStandardMaterial({color:0x0d0d0e, roughness:.6, metalness:.3}));
+    leaf.position.set(0,1.275,0.7); doorHinge.add(leaf);
+    // 漏光缝（门边一条竖光）
+    const slit=new THREE.Mesh(new THREE.PlaneGeometry(0.035,2.4),
+      new THREE.MeshBasicMaterial({color:0xffe6b8}));
+    slit.rotation.y=Math.PI/2; slit.position.set(0.037,1.275,1.385); doorHinge.add(slit);
+    doorLight=new THREE.PointLight(0xffcf92, 0.35, 6, 1.9); doorLight.position.set(-HW-AL-0.4,1.3,DZ); scene.add(doorLight);
+    // 高窄空间,一串垂吊灯泡往深处
+    const rim=new THREE.PointLight(0xbcc8d6, 1.5, 4.5, 2); rim.position.set(-HW+0.3,2.1,DZ); scene.add(rim);
+    for(const [zz,inten] of [[1,2.2],[-4,1.8],[-8,1.2],[-11,0.8]]){
+      const wire=new THREE.Mesh(new THREE.BoxGeometry(0.015,H-2.35,0.015),
+        new THREE.MeshStandardMaterial({color:0x111,roughness:.8})); wire.position.set(0,H-((H-2.35)/2),zz); scene.add(wire);
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.04,10,8),
+        new THREE.MeshBasicMaterial({color:0xffe2b0})); bulb.position.set(0,2.35,zz); scene.add(bulb);
+      const pl=new THREE.PointLight(0xffd9a6, inten, 7, 2); pl.position.set(0,2.3,zz); scene.add(pl);
+    }
+    scene.add(new THREE.AmbientLight(0x232326, 1.2));
+  }
+  camera.position.set(0.4, cfg.camY, 1.8);
+  yaw = -0.5; pitch = -0.02; applyLook();
+}
+
+// ===== 控制（同走廊） =====
+let yaw=0, pitch=0; const keys={};
+const euler=new THREE.Euler(0,0,0,"YXZ");
+function applyLook(){ euler.set(pitch,yaw,0); camera.quaternion.setFromEuler(euler); }
+addEventListener("keydown", e=>{ const k=e.key.toLowerCase();
+  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){keys[k]=true;e.preventDefault();}
+  if(k==="e"||k==="enter") tryOpen(); });
+addEventListener("keyup", e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener("click", ()=>{ if(!document.pointerLockElement && !QA.get("qa")) canvas.requestPointerLock(); });
+addEventListener("mousemove", e=>{ if(document.pointerLockElement===canvas){ yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022;
+  pitch=Math.max(-1.3,Math.min(1.3,pitch)); applyLook(); } });
+let padActive=false, padVec={x:0,y:0}, look={id:null,x:0,y:0};
+const pad=$("#pad"), stick=pad.querySelector("i");
+pad.addEventListener("pointerdown", e=>{padActive=true;padMove(e);pad.setPointerCapture(e.pointerId);});
+pad.addEventListener("pointermove", e=>{if(padActive)padMove(e);});
+pad.addEventListener("pointerup", ()=>{padActive=false;padVec={x:0,y:0};stick.style.transform="translate(0,0)";});
+function padMove(e){ const r=pad.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  const m=Math.hypot(dx,dy),mx=r.width/2-8; if(m>mx){dx*=mx/m;dy*=mx/m;} padVec={x:dx/mx,y:dy/mx}; stick.style.transform=`translate(${dx}px,${dy}px)`; }
+canvas.addEventListener("touchstart", e=>{const t=e.changedTouches[0]; if(t.clientX>innerWidth*0.4)look={id:t.identifier,x:t.clientX,y:t.clientY};},{passive:true});
+canvas.addEventListener("touchmove", e=>{for(const t of e.changedTouches){if(t.identifier===look.id){yaw-=(t.clientX-look.x)*0.005;pitch-=(t.clientY-look.y)*0.005;pitch=Math.max(-1.3,Math.min(1.3,pitch));look.x=t.clientX;look.y=t.clientY;applyLook();}}},{passive:true});
+canvas.addEventListener("touchend", e=>{for(const t of e.changedTouches)if(t.identifier===look.id)look.id=null;},{passive:true});
+$("#eBtn").addEventListener("pointerdown", e=>{e.preventDefault();tryOpen();});
+
+// ===== 音效 =====
+let AC=null;
+function au(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function creak(dur=1.6){ const a=au(); if(!a) return;
+  const o=a.createOscillator(); o.type="sawtooth";
+  o.frequency.setValueAtTime(150,a.currentTime); o.frequency.linearRampToValueAtTime(65,a.currentTime+dur);
+  const g=a.createGain(); g.gain.setValueAtTime(0.0001,a.currentTime);
+  g.gain.linearRampToValueAtTime(0.06,a.currentTime+0.2); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=650;
+  o.connect(f).connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.1); }
+function boom(){ const a=au(); if(!a) return;
+  const b=a.createBuffer(1,a.sampleRate*0.7,a.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+  const s=a.createBufferSource(); s.buffer=b;
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=110;
+  const g=a.createGain(); g.gain.value=1.4;
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+
+// ===== 开门过场 =====
+const DZ=-4;
+function nearDoor(){
+  const HW=V[variant].W/2;
+  const d=Math.hypot(camera.position.x-(-HW), camera.position.z-DZ);
+  if(d>2.2) return false;
+  const f=new THREE.Vector3(); camera.getWorldDirection(f);
+  const to=new THREE.Vector3(-HW-0.3-camera.position.x, 0, DZ-camera.position.z).normalize();
+  return f.x*to.x+f.z*to.z>0.45;
+}
+function tryOpen(){
+  if(entering||!nearDoor()||!doorHinge) return;
+  entering=true; $("#prompt").classList.remove("show");
+  if(document.pointerLockElement) document.exitPointerLock();
+  creak(variant==="A"?2.2:1.4);
+  const t0=performance.now(), HW=V[variant].W/2;
+  const openAng = variant==="C" ? -1.5 : (variant==="A" ? -1.9 : -1.7);
+  const cx0=camera.position.x, cz0=camera.position.z, yaw0=yaw, pitch0=pitch;
+  const tx=-HW-0.9, tz=DZ, tyaw=Math.PI/2;
+  function anim(){
+    const t=(performance.now()-t0)/1000;
+    const doorT=Math.min(1, t/1.6), e1=doorT<0.5?2*doorT*doorT:1-Math.pow(-2*doorT+2,2)/2;
+    doorHinge.rotation.y = openAng*e1;
+    if(doorLight) doorLight.intensity = (variant==="B"?0.9:0.35) + e1*(variant==="A"?3.2:variant==="C"?2.6:2.0);
+    if(t>0.9){
+      const wt=Math.min(1,(t-0.9)/1.5), e2=wt*wt*(3-2*wt);
+      camera.position.x=cx0+(tx-cx0)*e2; camera.position.z=cz0+(tz-cz0)*e2;
+      let dy=tyaw-yaw0; while(dy>Math.PI)dy-=Math.PI*2; while(dy<-Math.PI)dy+=Math.PI*2;
+      yaw=yaw0+dy*e2; pitch=pitch0*(1-e2); applyLook();
+    }
+    if(t>1.7) $("#blk").classList.add("show");
+    if(t<2.6) requestAnimationFrame(anim);
+    else {
+      boom();
+      $("#cap").textContent="—— 进入房间 ——   （3 秒后回到走廊,可换一种门再试）";
+      $("#cap").classList.add("show");
+      setTimeout(()=>{ $("#cap").classList.remove("show"); $("#blk").classList.remove("show"); build(variant); }, 2600);
+    }
+  }
+  anim();
+}
+
+// ===== 主循环 =====
+const clock=new THREE.Clock(), up=new THREE.Vector3(0,1,0);
+const mv=new THREE.Vector3(), right=new THREE.Vector3(), fwd=new THREE.Vector3();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.05, clock.getDelta());
+  if(!entering){
+    camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize(); right.crossVectors(fwd,up).normalize();
+    mv.set(0,0,0);
+    if(keys["w"]||keys["arrowup"])mv.add(fwd); if(keys["s"]||keys["arrowdown"])mv.sub(fwd);
+    if(keys["d"]||keys["arrowright"])mv.add(right); if(keys["a"]||keys["arrowleft"])mv.sub(right);
+    if(padActive){ mv.addScaledVector(fwd,-padVec.y); mv.addScaledVector(right,padVec.x); }
+    if(mv.lengthSq()>0.0001){ mv.normalize().multiplyScalar(2.5*dt); camera.position.add(mv);
+      const HW=V[variant].W/2;
+      camera.position.x=Math.max(-HW+0.3,Math.min(HW-0.3,camera.position.x));
+      camera.position.z=Math.max(-12.5,Math.min(2.6,camera.position.z)); }
+    camera.position.y=V[variant].camY;
+    $("#prompt").textContent="按 E 推门"; $("#prompt").classList.toggle("show", nearDoor());
+  }
+  composer.render();
+}
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.5,0.6,0.82);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); bloom.setSize(innerWidth,innerHeight); }
+addEventListener("resize", resize); resize();
+
+// RenderPass 场景引用要跟着变体重建走
+const rp = composer.passes[0];
+const _build = build;
+build = function(v){ _build(v); rp.scene = scene; };
+
+document.querySelectorAll(".vbtn").forEach(b=>b.addEventListener("click", ()=>build(b.dataset.v)));
+build(QA.get("v")||"A");
+if(QA.get("qa")){
+  if(QA.get("px")) camera.position.x=parseFloat(QA.get("px"));
+  if(QA.get("pz")) camera.position.z=parseFloat(QA.get("pz"));
+  if(QA.get("yaw")){ yaw=parseFloat(QA.get("yaw")); }
+  if(QA.get("pitch")){ pitch=parseFloat(QA.get("pitch")); }
+  applyLook();
+  if(QA.get("open")==="1") setTimeout(tryOpen, 400);
+}
+frame();
+</script>
+</body>
+</html>
