@@ -6,25 +6,28 @@
 <title>记忆碎片 · 暖光的门后</title>
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;
-    font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#efe2c6;}
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#e8dcc2;}
   #c3d{position:fixed;inset:0;display:block;}
   #vig{position:fixed;inset:0;z-index:5;pointer-events:none;
-    background:radial-gradient(ellipse 72% 66% at 50% 46%,transparent 44%,rgba(0,0,0,.6) 100%);}
-  #grain{position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.045;
+    background:radial-gradient(ellipse 72% 66% at 50% 46%,transparent 42%,rgba(0,0,0,.62) 100%);}
+  #grain{position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.05;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     animation:grain .5s steps(2) infinite;}
   @keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-6%,4%)}100%{transform:translate(4%,-5%)}}
-  #hint{position:fixed;left:0;right:0;bottom:30px;z-index:10;text-align:center;font-size:15px;letter-spacing:2px;
-    color:#c9b48a;text-shadow:0 2px 10px #000;pointer-events:none;transition:opacity .5s;}
   #cross{position:fixed;left:50%;top:50%;z-index:8;width:5px;height:5px;margin:-2.5px;border-radius:50%;
     background:rgba(240,230,200,.5);box-shadow:0 0 4px rgba(0,0,0,.8);pointer-events:none;opacity:0;transition:opacity .3s;}
+  #tag{position:fixed;left:14px;top:12px;z-index:10;font-size:12px;letter-spacing:1px;color:#6b5f45;pointer-events:none;}
+  #cap{position:fixed;left:0;right:0;top:10%;z-index:10;text-align:center;font-size:15px;letter-spacing:3px;
+    color:#e3d4b2;text-shadow:0 0 14px rgba(0,0,0,.9),0 2px 8px #000;opacity:0;transition:opacity .7s;pointer-events:none;}
+  #cap.show{opacity:1;}
   #prompt{position:fixed;left:50%;top:56%;z-index:9;transform:translateX(-50%);padding:8px 18px;
     border:1px solid rgba(220,190,130,.5);border-radius:24px;background:rgba(24,17,10,.82);font-size:15px;
     letter-spacing:2px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 24px rgba(240,190,90,.16);
     opacity:0;pointer-events:none;transition:opacity .2s;}
   #prompt.show{opacity:1;}
-  /* 记忆闪回 */
-  #flash{position:fixed;inset:0;z-index:20;background:radial-gradient(ellipse at 50% 40%,#3a2c18,#0a0806 75%);
+  #blk{position:fixed;inset:0;z-index:14;background:#000;opacity:0;pointer-events:none;transition:opacity .5s;}
+  #blk.show{opacity:1;}
+  #flash{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 40%,#3a2c18,#0a0806 75%);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;padding:0 26px;
     opacity:0;pointer-events:none;transition:opacity 1.2s;}
   #flash.show{opacity:1;pointer-events:auto;}
@@ -36,7 +39,7 @@
   .btn{padding:11px 30px;border:1px solid rgba(220,185,120,.5);border-radius:4px;background:rgba(40,30,16,.6);
     color:#f0dcab;font-size:15px;letter-spacing:3px;cursor:pointer;}
   .btn:hover{background:rgba(70,52,26,.7);}
-  #gate{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  #gate{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:20px;background:#070503;text-align:center;transition:opacity .8s;}
   #gate.gone{opacity:0;pointer-events:none;}
   #gate .s{font-size:13px;letter-spacing:3px;color:#8a7a54;}
@@ -50,16 +53,16 @@
     border:1px solid rgba(220,185,120,.4);background:rgba(40,30,16,.5);color:#f0dcab;font-size:20px;
     display:none;align-items:center;justify-content:center;touch-action:none;}
   @media (pointer:coarse){#pad{display:block;}#eBtn{display:flex;}}
-  #tag{position:fixed;left:14px;top:12px;z-index:10;font-size:12px;letter-spacing:1px;color:#6b5f45;pointer-events:none;}
 </style>
 </head>
 <body>
 <canvas id="c3d"></canvas>
 <div id="vig"></div><div id="grain"></div>
 <div id="cross"></div>
-<div id="tag">暖光的门后 · 第一人称</div>
-<div id="hint">点击画面进入 · WASD 走动 · 鼠标转头 · 走近发光的东西按 E</div>
+<div id="tag">暖光的门后 · 家</div>
+<div id="cap"></div>
 <div id="prompt"></div>
+<div id="blk"></div>
 <div id="flash">
   <div class="fk">记 忆 碎 片</div>
   <p class="ft" id="flashText"></p>
@@ -69,8 +72,8 @@
 <div id="eBtn">E</div>
 <div id="gate">
   <div class="s">暖 光 的 门 后</div>
-  <button class="go" id="goBtn" disabled>推 门 …</button>
-  <div class="s" id="gateHint">正在载入</div>
+  <button class="go" id="goBtn" disabled>正在回家…</button>
+  <div class="s" id="gateHint">好像有人在等你</div>
 </div>
 
 <script type="importmap">
@@ -78,109 +81,361 @@
 </script>
 <script type="module">
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/GLTFLoader.js";
+import { Reflector } from "three/addons/objects/Reflector.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 const $ = s => document.querySelector(s);
+const QA = new URLSearchParams(location.search);
 const canvas = $("#c3d");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0805);
-scene.fog = new THREE.FogExp2(0x1a1108, 0.04);
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 80);
-camera.position.set(0, 1.6, 2.4);
+scene.background = new THREE.Color(0x030302);
+scene.fog = new THREE.FogExp2(0x0a0805, 0.055);
+const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.04, 60);
+const solids = [];   // {x,z,r} 或 {rect:true,...}
+camera.position.set(1.6, 1.55, 1.55);
 
-// 房间尺寸
-const RX = 3, RY = 3.4, RZ = 3;
+// ===== 材质 =====
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
 const manager = new THREE.LoadingManager();
 const texL = new THREE.TextureLoader(manager);
-function pbr(name, repX, repY, tint) {
-  const load = (suffix, srgb) => { const t = texL.load(`./assets/textures/${name}_${suffix}.jpg`);
+function pbr(name, repX, repY, tint){
+  const load = (suffix, srgb) => { const t = texL.load(`./assets/home/textures/${name}_${suffix}.jpg`);
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repX, repY); t.anisotropy = maxAniso;
     if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
-  return new THREE.MeshStandardMaterial({ map:load("color",true), normalMap:load("normal",false),
-    roughnessMap:load("rough",false), roughness:1, metalness:0, color:tint });
+  const m = new THREE.MeshStandardMaterial({ map:load("color",true), normalMap:load("normal",false),
+    roughnessMap:load("rough",false), roughness:1, metalness:0, color:tint, side:THREE.DoubleSide });
+  m.normalScale.set(0.4,0.4); return m;
 }
-const wallMat  = pbr("wall", 3, 1.4, 0x9a7a52);   // 暖调墙皮
-const floorMat = pbr("floor", 3, 3, 0x6b4f33);    // 暖木色地
-const ceilMat  = pbr("wall", 3, 1.4, 0x5a442c);
-function plane(mat,w,h,pos,rot){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
-  m.position.set(...pos); if(rot)m.rotation.set(...rot); m.receiveShadow=true; scene.add(m); return m; }
-plane(floorMat, RX*2, RZ*2, [0,0,0], [-Math.PI/2,0,0]);
-plane(ceilMat,  RX*2, RZ*2, [0,RY,0], [Math.PI/2,0,0]);
-plane(wallMat, RX*2, RY, [0,RY/2,-RZ], [0,0,0]);
-plane(wallMat, RX*2, RY, [0,RY/2, RZ], [0,Math.PI,0]);
-plane(wallMat, RZ*2, RY, [-RX,RY/2,0], [0,Math.PI/2,0]);
-plane(wallMat, RZ*2, RY, [ RX,RY/2,0], [0,-Math.PI/2,0]);
+const wallMat  = pbr("wall", 3.6, 1.8, 0xb9a888);
+const floorMat = pbr("floor", 3, 3, 0x9c8468);
+const ceilMat  = pbr("wall", 2, 2, 0x6e6252);
+const tileMat  = pbr("tile", 2.2, 2.2, 0x5d6465);
+const tileFloorMat = pbr("tile", 1.6, 1.6, 0x525a5a);
 
-// 软光晕贴图
-const GLOW = (()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=128; const x=cv.getContext("2d");
-  const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,"rgba(255,255,255,1)");
-  g.addColorStop(.45,"rgba(255,255,255,.42)"); g.addColorStop(1,"rgba(255,255,255,0)");
-  x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(cv); })();
-function glowPlane(color, w, h, op){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
-  new THREE.MeshBasicMaterial({ map:GLOW, color, transparent:true, opacity:op, blending:THREE.AdditiveBlending, depthWrite:false })); return m; }
-
-// ===== 家具（简单几何，靠暖光营造）=====
-const woodDark = new THREE.MeshStandardMaterial({ color:0x4a3320, roughness:.75, metalness:.05 });
-const woodLite = new THREE.MeshStandardMaterial({ color:0x6b4a2c, roughness:.7, metalness:.05 });
-const cloth    = new THREE.MeshStandardMaterial({ color:0xcaa46a, roughness:.95, metalness:0 });
+// ===== 房间结构 =====
+// 客厅 x[-2.6,2.6] z[-2.1,2.1] 高2.7；走道 x[-0.4,0.6] z[-5.1,-2.1] 高2.4；卫生间 x[-1.3,1.1] z[-7.0,-5.1] 高2.4
 function box(mat,w,h,d,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
   m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; }
-// 小床（靠左墙）
-box(woodDark, 1.1, 0.3, 2.0, -RX+0.62, 0.28, -0.6);   // 床架
-box(cloth,    1.0, 0.18, 1.9, -RX+0.62, 0.5, -0.6);    // 床垫
-box(new THREE.MeshStandardMaterial({color:0xe6d3a6,roughness:1}), 0.9,0.16,0.35, -RX+0.62,0.62,-1.35); // 枕头
-box(new THREE.MeshStandardMaterial({color:0xb5813f,roughness:.95}), 1.0,0.05,1.4, -RX+0.62,0.6,-0.2);   // 被子
-// 地毯
-plane(new THREE.MeshStandardMaterial({color:0x7a4f2c,roughness:1}), 2.2,2.0, [0.4,0.01,0.4], [-Math.PI/2,0,0]);
-// 床头柜（放记忆物）
-box(woodLite, 0.6,0.7,0.5, 0.7,0.35,-RZ+0.4);
-// 窗（暖色外光）
-const winPane = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.3),
-  new THREE.MeshBasicMaterial({ color:0xffcf8a })); winPane.position.set(RX-0.03, 1.9, 0.3); winPane.rotation.y=-Math.PI/2; scene.add(winPane);
-const winFrame = box(woodDark, 0.12,1.5,1.7, RX-0.06,1.9,0.3);
-const winMull1 = box(woodDark, 0.1,0.08,1.7, RX-0.05,1.9,0.3);
-const winMull2 = box(woodDark, 0.1,1.5,0.08, RX-0.05,1.9,0.3);
-const winGlow = glowPlane(0xffc074, 2.0,1.9, .32); winGlow.position.set(RX-0.12,1.9,0.3); winGlow.rotation.y=-Math.PI/2; scene.add(winGlow);
-const winLight = new THREE.PointLight(0xffc074, 1.4, 6, 2); winLight.position.set(RX-0.5,1.9,0.3); scene.add(winLight);
+function plane(mat,w,h,pos,rot){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
+  m.position.set(...pos); if(rot)m.rotation.set(...rot); m.receiveShadow=true; scene.add(m); return m; }
+// 地板
+plane(floorMat, 5.2, 4.2, [0,0,0], [-Math.PI/2,0,0]);
+{ const rug=new THREE.Mesh(new THREE.CircleGeometry(1.05,36),
+    new THREE.MeshStandardMaterial({color:0x4a2b20, roughness:.97}));
+  rug.rotation.x=-Math.PI/2; rug.scale.y=0.72; rug.position.set(-0.7,0.005,0.05); rug.receiveShadow=true; scene.add(rug); }
+plane(floorMat, 1.0, 3.0, [0.1,0,-3.6], [-Math.PI/2,0,0]);
+plane(tileFloorMat, 2.4, 1.9, [-0.1,0.001,-6.05], [-Math.PI/2,0,0]);
+// 天花
+plane(ceilMat, 5.2, 4.2, [0,2.7,0], [Math.PI/2,0,0]);
+plane(ceilMat, 1.0, 3.0, [0.1,2.4,-3.6], [Math.PI/2,0,0]);
+plane(ceilMat, 2.4, 1.9, [-0.1,2.4,-6.05], [Math.PI/2,0,0]);
+// 客厅墙
+box(wallMat, 5.2, 2.7, 0.1, 0, 1.35, 2.15);              // 南（门+窗贴在上面）
+box(wallMat, 0.1, 2.7, 4.2, -2.65, 1.35, 0);             // 西
+box(wallMat, 0.1, 2.7, 4.2, 2.65, 1.35, 0);              // 东
+box(wallMat, 2.2, 2.7, 0.1, -1.5, 1.35, -2.15);          // 北左
+box(wallMat, 2.0, 2.7, 0.1, 1.6, 1.35, -2.15);           // 北右
+box(wallMat, 1.0, 0.7, 0.1, 0.1, 2.35, -2.15);           // 北门楣
+// 走道墙
+box(wallMat, 0.1, 2.4, 3.0, -0.45, 1.2, -3.6);
+box(wallMat, 0.1, 2.4, 3.0, 0.65, 1.2, -3.6);
+// 卫生间隔墙（门洞 x[-0.35,0.45]）
+box(tileMat, 0.95, 2.4, 0.1, -0.825, 1.2, -5.15);
+box(tileMat, 0.65, 2.4, 0.1, 0.775, 1.2, -5.15);
+box(tileMat, 0.8, 0.45, 0.1, 0.05, 2.175, -5.15);
+// 卫生间墙
+box(tileMat, 0.1, 2.4, 1.9, -1.35, 1.2, -6.05);
+box(tileMat, 0.1, 2.4, 1.9, 1.15, 1.2, -6.05);
+box(tileMat, 2.5, 2.4, 0.1, -0.1, 1.2, -7.05);
 
-// ===== 记忆物：会发光的音乐盒（在床头柜上）=====
-const mbGroup = new THREE.Group(); mbGroup.position.set(0.7, 0.78, -RZ+0.4); scene.add(mbGroup);
-const mbBase = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.16,0.24),
-  new THREE.MeshStandardMaterial({ color:0x7a4a22, roughness:.5, metalness:.2, emissive:0x2a1400, emissiveIntensity:1 }));
+// ===== 入户门（在身后，会自己关上） =====
+const woodDark = new THREE.MeshStandardMaterial({ color:0x4a3524, roughness:.62, metalness:.06 });
+const doorFrame = box(woodDark, 1.0, 2.15, 0.06, 1.6, 1.05, 2.10);
+doorFrame.material = new THREE.MeshStandardMaterial({ color:0x2e2115, roughness:.7 });
+const entryHinge = new THREE.Group(); entryHinge.position.set(1.17, 0, 2.07); scene.add(entryHinge);
+const entryLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.86,2.05,0.05), woodDark);
+entryLeaf.position.set(0.43,1.05,0); entryLeaf.castShadow=true; entryHinge.add(entryLeaf);
+const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035,10,8),
+  new THREE.MeshStandardMaterial({ color:0x8a7440, roughness:.3, metalness:.9 }));
+knob.position.set(0.78,1.02,-0.05); entryHinge.add(knob);
+entryHinge.rotation.y = -1.25;   // 开着,等你进来
+
+// ===== 窗（雨夜） =====
+const winG = new THREE.Group(); winG.position.set(-1.0, 1.45, 2.09); scene.add(winG);
+const winFrameM = new THREE.MeshStandardMaterial({ color:0x33291c, roughness:.6 });
+{ const f1=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.06,0.07),winFrameM); f1.position.y=0.58; winG.add(f1);
+  const f2=f1.clone(); f2.position.y=-0.58; winG.add(f2);
+  const f3=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.22,0.07),winFrameM); f3.position.x=-0.75; winG.add(f3);
+  const f4=f3.clone(); f4.position.x=0.75; winG.add(f4);
+  const f5=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.16,0.05),winFrameM); winG.add(f5); }
+const rainCv = document.createElement("canvas"); rainCv.width=128; rainCv.height=128;
+const rainTex = new THREE.CanvasTexture(rainCv);
+const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.44,1.16),
+  new THREE.MeshBasicMaterial({ map:rainTex, transparent:false }));
+glass.rotation.y = Math.PI; glass.position.z = -0.02; winG.add(glass);
+let lightning = 0;
+function drawRainTex(){
+  const x = rainCv.getContext("2d");
+  const sky = 8 + lightning*190;
+  x.fillStyle = `rgb(${sky*0.9|0},${sky|0},${sky*1.25+6|0})`; x.fillRect(0,0,128,128);
+  x.strokeStyle = `rgba(190,210,235,${0.25+lightning*0.5})`; x.lineWidth = 1;
+  for(let i=0;i<26;i++){ const rx=(Math.random()*128)|0, ry=(Math.random()*128)|0, l=4+Math.random()*9;
+    x.beginPath(); x.moveTo(rx,ry); x.lineTo(rx-1,ry+l); x.stroke(); }
+  rainTex.needsUpdate = true;
+}
+
+// ===== 灯 =====
+scene.add(new THREE.AmbientLight(0x2a2620, 1.7));
+const lrLight = new THREE.PointLight(0xffd9a2, 3.4, 12, 1.8); lrLight.position.set(0,2.28,0);
+lrLight.castShadow=true; lrLight.shadow.mapSize.set(1024,1024); scene.add(lrLight);
+const hallLight = new THREE.PointLight(0xffc98a, 1.1, 6, 2.2); hallLight.position.set(0.1,2.15,-3.7); scene.add(hallLight);
+const hallBulb = new THREE.Mesh(new THREE.SphereGeometry(0.045,10,8),
+  new THREE.MeshBasicMaterial({ color:0xffe0ae })); hallBulb.position.copy(hallLight.position); scene.add(hallBulb);
+box(new THREE.MeshStandardMaterial({color:0x1c150c}), 0.02,0.28,0.02, 0.1,2.32,-3.7);
+const bathLight = new THREE.PointLight(0xd7e8ff, 0, 5.2, 2.0); bathLight.position.set(-0.1,2.2,-6.0); scene.add(bathLight);
+const tubeMat = new THREE.MeshBasicMaterial({ color:0x0e1114 });
+const tube = box(tubeMat, 0.9, 0.045, 0.1, -0.1, 2.34, -6.0);
+const tvLight = new THREE.PointLight(0x9fc4ff, 0, 5, 2.0); tvLight.position.set(1.9,1.0,0); scene.add(tvLight);
+// 落地灯（沙发角）
+const flG = new THREE.Group(); flG.position.set(-2.25,0,-1.7); scene.add(flG);
+{ const base=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.16,0.03,14),
+    new THREE.MeshStandardMaterial({color:0x1c1712, roughness:.5, metalness:.4})); base.position.y=0.015; flG.add(base);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,1.35,10),
+    new THREE.MeshStandardMaterial({color:0x2a241c, roughness:.4, metalness:.6})); pole.position.y=0.7; flG.add(pole);
+  const shade=new THREE.Mesh(new THREE.ConeGeometry(0.19,0.24,16,1,true),
+    new THREE.MeshStandardMaterial({color:0xc9a86a, roughness:.9, side:THREE.DoubleSide,
+      emissive:0x3a2408, emissiveIntensity:1})); shade.position.y=1.44; flG.add(shade);
+  flG.traverse(n=>{ if(n.isMesh) n.castShadow=true; }); }
+const floorLamp = new THREE.PointLight(0xffcf92, 1.5, 5.5, 2.0); floorLamp.position.set(-2.25,1.36,-1.7); scene.add(floorLamp);
+solids.push({x:-2.25,z:-1.7,r:0.22});
+
+// ===== 家具（Poly Haven CC0 GLB） =====
+const loader = new GLTFLoader(manager);
+function loadModel(slug, cfg){
+  loader.load(`./assets/home/models/${slug}/${slug}.gltf`, gltf=>{
+    const o = gltf.scene;
+    o.traverse(n=>{ if(n.isMesh){ n.castShadow=true; n.receiveShadow=true; } });
+    o.rotation.y = cfg.rotY||0;
+    o.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(o);
+    o.position.set(cfg.x, (cfg.y!==undefined?cfg.y:0)-bb.min.y, cfg.z);
+    if(cfg.scale){ o.scale.setScalar(cfg.scale); o.updateMatrixWorld(true);
+      const b2=new THREE.Box3().setFromObject(o); o.position.y=(cfg.y||0)-b2.min.y; }
+    scene.add(o);
+    if(cfg.solidR) solids.push({x:cfg.x, z:cfg.z, r:cfg.solidR});
+    if(cfg.onload) cfg.onload(o);
+  });
+}
+loadModel("sofa_02",               { x:-1.75, z:0.05, rotY: Math.PI/2, solidR:0.95 });
+loadModel("modern_coffee_table_01",{ x:-0.45, z:0.05, rotY: 0,          solidR:0.55, onload(o){
+  o.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(o);
+  mbGroup.position.y = b.max.y + 0.045; mbGroup.getWorldPosition(MB); } });
+loadModel("potted_plant_01",       { x: 2.2,  z:-1.75, rotY: 0.4,       solidR:0.3 });
+loadModel("modern_ceiling_lamp_01",{ x:0, z:0, y:0, rotY:0, onload(o){
+  o.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(o);
+  o.position.y += 2.7 - b.max.y; } });
+let wheelchair=null;
+loadModel("wheelchair_01",         { x:0.12, z:-4.5, rotY: 2.6, solidR:0.42, onload(o){ wheelchair=o; } });
+// 电视柜 + 电视
+box(new THREE.MeshStandardMaterial({ color:0x241a10, roughness:.55 }), 1.15,0.42,0.5, 2.3,0.21,0.05);
+solids.push({rect:true, x0:1.95, x1:2.6, z0:-0.35, z1:0.45});
+let tvScreen=null;
+loadModel("Television_01", { x:2.28, z:0.05, y:0.42, rotY: -Math.PI/2, onload(o){
+  // 屏幕面板：贴在电视朝向客厅那一面
+  const b=new THREE.Box3().setFromObject(o);
+  const w=(b.max.z-b.min.z)*0.62, h=(b.max.y-b.min.y)*0.55;
+  tvScreen = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshBasicMaterial({ map:staticTex, color:0x000000 }));
+  tvScreen.rotation.y = -Math.PI/2;
+  tvScreen.position.set(b.min.x-0.005, (b.min.y+b.max.y)/2+0.03, (b.min.z+b.max.z)/2);
+  scene.add(tvScreen);
+}});
+// 沙发/茶几边界补充
+solids.push({rect:true, x0:-2.6, x1:-1.15, z0:-1.0, z1:1.05});   // 沙发区
+solids.push({rect:true, x0:-0.95, x1:0.05, z0:-0.45, z1:0.55});  // 茶几
+
+// ===== 电视雪花纹理 =====
+const staticCv = document.createElement("canvas"); staticCv.width=128; staticCv.height=96;
+const staticTex = new THREE.CanvasTexture(staticCv);
+let tvOn=false, faceFlash=0;
+const faceTex = texL.load("./assets/characters/mirror_self.png");
+faceTex.colorSpace = THREE.SRGBColorSpace;
+function drawStatic(){
+  const x=staticCv.getContext("2d");
+  const d=x.createImageData(128,96);
+  for(let i=0;i<d.data.length;i+=4){ const v=(Math.random()*255)|0;
+    d.data[i]=v; d.data[i+1]=v; d.data[i+2]=v+20; d.data[i+3]=255; }
+  x.putImageData(d,0,0);
+  staticTex.needsUpdate=true;
+}
+
+// ===== 音乐盒（碎片本体，在茶几上） =====
+const mbGroup = new THREE.Group(); mbGroup.position.set(-0.45, 0.48, 0.05); scene.add(mbGroup);
+const mbBase = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.09,0.14),
+  new THREE.MeshStandardMaterial({ color:0x6e4520, roughness:.42, metalness:.2, emissive:0x000000 }));
 mbBase.castShadow=true; mbGroup.add(mbBase);
-const mbLid = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.05,0.26),
-  new THREE.MeshStandardMaterial({ color:0x8a5a2a, roughness:.4, metalness:.3 })); mbLid.position.y=0.1; mbLid.rotation.x=-0.5; mbGroup.add(mbLid);
-const mbGlow = glowPlane(0xffcf8a, 1.4,1.4, .85); mbGlow.position.set(0,0.1,0.2); mbGroup.add(mbGlow);
-const mbLight = new THREE.PointLight(0xffcf8a, 1.6, 3.2, 2); mbLight.position.set(0,0.25,0.1); mbGroup.add(mbLight);
-const MB_WORLD = new THREE.Vector3(); mbGroup.getWorldPosition(MB_WORLD);
+const mbLid = new THREE.Mesh(new THREE.BoxGeometry(0.21,0.03,0.15),
+  new THREE.MeshStandardMaterial({ color:0x7e5228, roughness:.4 }));
+mbLid.position.y=0.06; mbGroup.add(mbLid);
+const mbLight = new THREE.PointLight(0xffcf8a, 0, 2.0, 2); mbLight.position.set(0,0.16,0); mbGroup.add(mbLight);
+const MB = new THREE.Vector3(); mbGroup.getWorldPosition(MB);
 
-// ===== 灯光 =====
-scene.add(new THREE.AmbientLight(0x3a2c18, 1.6));
-const bulb = new THREE.PointLight(0xffca7a, 3.2, 9, 2); bulb.position.set(0,RY-0.5,0.3);
-bulb.castShadow=true; bulb.shadow.mapSize.set(1024,1024); scene.add(bulb);
-const bulbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.07,10,10), new THREE.MeshBasicMaterial({color:0xffe4b0}));
-bulbMesh.position.copy(bulb.position); scene.add(bulbMesh);
-box(new THREE.MeshStandardMaterial({color:0x2a1c10,roughness:.7}), 0.02,0.5,0.02, 0,RY-0.25,0.3); // 灯线
+// ===== 卫生间：马桶 / 洗手台 / 镜子 =====
+const ceramic = new THREE.MeshStandardMaterial({ color:0xdfe3e0, roughness:.22, metalness:.02 });
+const toiletG = new THREE.Group(); toiletG.position.set(-1.02,0,-6.45); toiletG.rotation.y=Math.PI/2; scene.add(toiletG);
+{ const bowl=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.15,0.38,18), ceramic); bowl.position.y=0.19; toiletG.add(bowl);
+  const seat=new THREE.Mesh(new THREE.CylinderGeometry(0.21,0.21,0.05,18), ceramic); seat.position.y=0.41; toiletG.add(seat);
+  const tank=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.42,0.16), ceramic); tank.position.set(0,0.55,-0.26); toiletG.add(tank);
+  toiletG.traverse(n=>{ if(n.isMesh){n.castShadow=true;} }); }
+solids.push({x:-1.02, z:-6.45, r:0.34});
+const TOILET = new THREE.Vector3(-1.02,0.5,-6.45);
+const sinkG = new THREE.Group(); sinkG.position.set(0.55,0,-6.82); scene.add(sinkG);
+{ const basin=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.09,0.4), ceramic); basin.position.y=0.82; sinkG.add(basin);
+  const ped=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.8,12), ceramic); ped.position.y=0.4; sinkG.add(ped);
+  const tap=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.12,0.04),
+    new THREE.MeshStandardMaterial({color:0x9aa2a8, roughness:.25, metalness:.9})); tap.position.set(0,0.93,-0.14); sinkG.add(tap); }
+solids.push({x:0.55, z:-6.82, r:0.32});
+// 镜子（真反射）
+const mirror = new Reflector(new THREE.PlaneGeometry(0.5,0.66), {
+  textureWidth:512, textureHeight:512, color:0x889096 });
+mirror.position.set(0.55,1.52,-6.99); scene.add(mirror);
+const mirFrame = box(new THREE.MeshStandardMaterial({color:0x2a2d30, roughness:.5}), 0.56,0.72,0.03, 0.55,1.52,-7.02);
+const MIRROR = new THREE.Vector3(0.55,1.4,-6.99);
 
-// ===== 第一人称控制 =====
-let yaw = 0, pitch = 0; const keys = {};
-const euler = new THREE.Euler(0,0,0,"YXZ");
+// ===== 卫生间门（会自己吱呀开） =====
+const bathHinge = new THREE.Group(); bathHinge.position.set(-0.35,0,-5.12); scene.add(bathHinge);
+const bathLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.78,2.1,0.045), woodDark);
+bathLeaf.position.set(0.39,1.05,0); bathLeaf.castShadow=true; bathHinge.add(bathLeaf);
+let bathDoorT = 0, bathDoorOpen = false;   // 0关 → 1全开
+
+// ===== 人影（用户出的 mirror_self 立绘） =====
+const figMat = new THREE.MeshBasicMaterial({ map:faceTex, transparent:true, opacity:0.0, depthWrite:false });
+const figure = new THREE.Mesh(new THREE.PlaneGeometry(0.72,1.85), figMat);
+figure.position.set(0.1,0.925,-4.85); scene.add(figure); figure.visible=false;
+let figureMode = "none";   // none | mirror | hall | gone
+mirror.onBeforeRender2 = null;
+// 镜中模式：只在镜子反射 pass 里可见
+const _mirBefore = mirror.onBeforeRender.bind(mirror);
+mirror.onBeforeRender = function(r, s, c){
+  if(figureMode==="mirror"){ figure.visible=true; figMat.opacity=0.85; _mirBefore(r,s,c); figure.visible=false; }
+  else _mirBefore(r,s,c);
+};
+
+// ===== 湿脚印 =====
+const printMat = new THREE.MeshStandardMaterial({ color:0x0c0f14, roughness:.15, transparent:true, opacity:0 });
+const prints=[];
+{ const pts=[[0.1,-4.4],[0.14,-3.7],[0.02,-3.0],[0.12,-2.35],[-0.05,-1.6],[-0.15,-0.9],[-0.3,-0.35]];
+  for(let i=0;i<pts.length;i++){
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(0.09,0.2), printMat.clone());
+    p.rotation.x=-Math.PI/2; p.rotation.z=(i%2?0.12:-0.12);
+    p.position.set(pts[i][0]+(i%2?0.09:-0.09), 0.004, pts[i][1]); scene.add(p); prints.push(p);
+  } }
+
+// ===== 声音（全程序化） =====
+let AC=null, rainG=null, staticG=null, heartG=null, dripTimer=null;
+function au(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function noiseSrc(dur){ const a=au(); if(!a) return null;
+  const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=a.createBufferSource(); s.buffer=b; return s; }
+function startRain(){ const a=au(); if(!a||rainG) return;
+  const s=noiseSrc(2); s.loop=true;
+  const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1500; f.Q.value=0.4;
+  rainG=a.createGain(); rainG.gain.value=0.028;
+  s.connect(f).connect(rainG).connect(a.destination); s.start(); }
+function thud(){ const a=au(); if(!a) return; const s=noiseSrc(0.5);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=90;
+  const g=a.createGain(); g.gain.setValueAtTime(1.6,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.45);
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+function creak(dur=1.1, f0=180, f1=90){ const a=au(); if(!a) return;
+  const o=a.createOscillator(); o.type="sawtooth";
+  o.frequency.setValueAtTime(f0,a.currentTime);
+  o.frequency.linearRampToValueAtTime(f1,a.currentTime+dur);
+  const g=a.createGain(); g.gain.setValueAtTime(0.0001,a.currentTime);
+  g.gain.linearRampToValueAtTime(0.05,a.currentTime+0.12);
+  g.gain.setValueAtTime(0.045,a.currentTime+dur-0.25);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
+  const flt=a.createBiquadFilter(); flt.type="lowpass"; flt.frequency.value=800;
+  o.connect(flt).connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.05); }
+function sting(){ const a=au(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain(); o.type="sawtooth";
+  o.frequency.setValueAtTime(700,a.currentTime); o.frequency.exponentialRampToValueAtTime(60,a.currentTime+0.8);
+  g.gain.setValueAtTime(0.22,a.currentTime); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.85);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+0.9); }
+function setStatic(on){ const a=au(); if(!a) return;
+  if(on && !staticG){ const s=noiseSrc(1); s.loop=true;
+    const f=a.createBiquadFilter(); f.type="highpass"; f.frequency.value=900;
+    staticG=a.createGain(); staticG.gain.value=0.05;
+    s.connect(f).connect(staticG).connect(a.destination); s.start(); }
+  if(!on && staticG){ staticG.gain.linearRampToValueAtTime(0.0001, a.currentTime+0.15);
+    const old=staticG; staticG=null; setTimeout(()=>{ try{old.disconnect();}catch(e){} },300); } }
+function setHeart(on){ const a=au(); if(!a) return;
+  if(on && !heartG){ heartG={stop:false};
+    const beat=()=>{ if(heartG.stop) return;
+      for(const [dt,vol] of [[0,0.5],[0.16,0.3]]){
+        const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.value=48;
+        g.gain.setValueAtTime(0.0001,a.currentTime+dt); g.gain.linearRampToValueAtTime(vol,a.currentTime+dt+0.03);
+        g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dt+0.22);
+        o.connect(g).connect(a.destination); o.start(a.currentTime+dt); o.stop(a.currentTime+dt+0.3); }
+      heartG.t=setTimeout(beat, 860); };
+    beat(); }
+  if(!on && heartG){ heartG.stop=true; clearTimeout(heartG.t); heartG=null; } }
+function drip(){ const a=au(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain(); o.type="sine";
+  o.frequency.setValueAtTime(1150,a.currentTime); o.frequency.exponentialRampToValueAtTime(420,a.currentTime+0.09);
+  g.gain.setValueAtTime(0.06,a.currentTime); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.12);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+0.15); }
+function flush(){ const a=au(); if(!a) return; const s=noiseSrc(2.4);
+  const f=a.createBiquadFilter(); f.type="bandpass"; f.Q.value=0.8;
+  f.frequency.setValueAtTime(400,a.currentTime); f.frequency.exponentialRampToValueAtTime(1400,a.currentTime+0.5);
+  f.frequency.exponentialRampToValueAtTime(300,a.currentTime+2.2);
+  const g=a.createGain(); g.gain.setValueAtTime(0.0001,a.currentTime);
+  g.gain.linearRampToValueAtTime(0.14,a.currentTime+0.3); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+2.3);
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+function rumble(){ const a=au(); if(!a) return; const s=noiseSrc(2.4);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=120;
+  const g=a.createGain(); g.gain.setValueAtTime(0.001,a.currentTime);
+  g.gain.linearRampToValueAtTime(0.5,a.currentTime+0.25); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+2.3);
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+const MB_NOTES=[880,988,784,659,880,740,659,587];
+let mbPlaying=false, mbNoteI=0, mbTimer=null;
+function musicboxLoop(){ const a=au(); if(!a||!mbPlaying) return;
+  const n=MB_NOTES[mbNoteI++ % MB_NOTES.length];
+  const o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.value=n;
+  g.gain.setValueAtTime(0.055,a.currentTime); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.9);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+0.95);
+  mbTimer=setTimeout(musicboxLoop, 520); }
+// 脚步（木地板）
+let stepAcc=0;
+function foot(){ const a=au(); if(!a) return; const s=noiseSrc(0.12);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=300+Math.random()*140;
+  const g=a.createGain(); g.gain.setValueAtTime(0.16,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.1);
+  s.connect(f).connect(g).connect(a.destination); s.start();
+  if(Math.random()<0.12) creak(0.7, 220, 140); }
+
+// ===== 控制 =====
+let yaw=0.5, pitch=0; const keys={};
+const euler=new THREE.Euler(0,0,0,"YXZ");
 function applyLook(){ euler.set(pitch,yaw,0); camera.quaternion.setFromEuler(euler); } applyLook();
 addEventListener("keydown", e=>{ const k=e.key.toLowerCase();
   if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){keys[k]=true;e.preventDefault();}
-  if(k==="e"||k==="enter") tryTouch(); });
+  if(k==="e"||k==="enter") act(); });
 addEventListener("keyup", e=>keys[e.key.toLowerCase()]=false);
 const SENS=0.0022;
-canvas.addEventListener("click", ()=>{ if(started && !document.pointerLockElement) canvas.requestPointerLock(); });
+canvas.addEventListener("click", ()=>{ if(started && !document.pointerLockElement && !QA.get("qa")) canvas.requestPointerLock(); });
 addEventListener("mousemove", e=>{ if(document.pointerLockElement===canvas){ yaw-=e.movementX*SENS; pitch-=e.movementY*SENS;
   pitch=Math.max(-1.3,Math.min(1.3,pitch)); applyLook(); } });
 let padActive=false, padVec={x:0,y:0}, look={id:null,x:0,y:0};
@@ -193,78 +448,235 @@ function padMove(e){ const r=pad.getBoundingClientRect(); let dx=e.clientX-(r.le
 canvas.addEventListener("touchstart", e=>{const t=e.changedTouches[0]; if(t.clientX>innerWidth*0.4)look={id:t.identifier,x:t.clientX,y:t.clientY};},{passive:true});
 canvas.addEventListener("touchmove", e=>{for(const t of e.changedTouches){if(t.identifier===look.id){yaw-=(t.clientX-look.x)*0.005;pitch-=(t.clientY-look.y)*0.005;pitch=Math.max(-1.3,Math.min(1.3,pitch));look.x=t.clientX;look.y=t.clientY;applyLook();}}},{passive:true});
 canvas.addEventListener("touchend", e=>{for(const t of e.changedTouches)if(t.identifier===look.id)look.id=null;},{passive:true});
-$("#eBtn").addEventListener("pointerdown", e=>{e.preventDefault();tryTouch();});
+$("#eBtn").addEventListener("pointerdown", e=>{e.preventDefault();act();});
 
-// ===== 记忆物交互 =====
-const promptEl=$("#prompt"), flashEl=$("#flash");
-let near=false, taken=false, done=false;
-const fwd=new THREE.Vector3(), toObj=new THREE.Vector3();
-const MEMORY = "妈妈在厨房喊你的名字，喊了两遍。\n饭菜的热气糊住了窗，外面下着雪。\n你跑过去，围裙上是你最爱的那道菜的味道——\n可你想不起她的脸，也想不起，自己的名字。\n\n音乐盒的底座，刻着一行很小的字：\n「样本 7931 · 温暖 · 家 —— 已录入」。\n这段温暖，从来不是你的。\n是他们，放进来的。";
-function updatePrompt(){
-  if(done||flashEl.classList.contains("show")){ promptEl.classList.remove("show"); return; }
+// 可行走区域（三个房间的并集）+ 家具
+function walkable(x,z){
+  const inLR = x>-2.45 && x<2.45 && z>-1.95 && z<1.95;
+  const inHall = x>-0.28 && x<0.48 && z>-5.0 && z<-1.9;
+  const inBath = x>-1.18 && x<0.95 && z>-6.9 && z<-4.9;
+  const inBathDoor = x>-0.3 && x<0.4 && z>-5.35 && z<-4.9;
+  if(!(inLR||inHall||inBath)) return false;
+  if(z<-4.9 && z>-5.35 && !(inBathDoor && bathDoorT>0.5)) return false;   // 卫生间门没开进不去
+  for(const s of solids){
+    if(s.rect){ if(x>s.x0&&x<s.x1&&z>s.z0&&z<s.z1) return false; }
+    else if(Math.hypot(x-s.x,z-s.z)<s.r) return false;
+  }
+  return true;
+}
+
+// ===== 字幕 =====
+let capTimer=null;
+function caption(text, ms){
+  const el=$("#cap"); el.textContent=text; el.classList.add("show");
+  clearTimeout(capTimer); capTimer=setTimeout(()=>el.classList.remove("show"), ms||3600);
+}
+
+// ===== 交互 / 事件脚本 =====
+let EVT=0;    // 0进门 1沙发 2电视 3卫生间 4人影 5音乐盒
+let sofaDone=false, toiletFlushed=false, mirrorSeen=false, blackout=false;
+const promptEl=$("#prompt");
+const fwd=new THREE.Vector3(), toV=new THREE.Vector3();
+function nearFacing(target, maxD, minFace){
   camera.getWorldDirection(fwd);
-  const dist=camera.position.distanceTo(MB_WORLD);
-  toObj.copy(MB_WORLD).sub(camera.position).normalize();
-  const facing=fwd.dot(toObj);
-  near = dist<1.8 && facing>0.6;
-  if(near){ promptEl.textContent="按 E 看这只音乐盒"; promptEl.classList.add("show"); }
+  const d=camera.position.distanceTo(target); if(d>maxD) return false;
+  toV.copy(target).sub(camera.position).normalize();
+  return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
+}
+const SOFA=new THREE.Vector3(-1.75,0.8,0.05);
+const TV=new THREE.Vector3(2.28,1.0,0.05);
+let hot=null;
+function updatePrompt(){
+  hot=null;
+  if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
+  if(nearFacing(SOFA,1.7)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
+  else if(nearFacing(TOILET,1.35)&&!toiletFlushed&&EVT>=3) hot={id:"toilet", tip:"按 E 按下冲水"};
+  else if(nearFacing(MB,1.35)){ hot = EVT>=5 ? {id:"mb", tip:"按 E 打开音乐盒"} : {id:"mb0", tip:"按 E 看看音乐盒"}; }
+  if(hot){ promptEl.textContent=hot.tip; promptEl.classList.add("show"); }
   else promptEl.classList.remove("show");
 }
-function tryTouch(){
-  if(done || flashEl.classList.contains("show") || !near) return;
+function act(){
+  if(frozen||!hot) return;
+  if(hot.id==="sofa"){
+    sofaDone=true; creak(1.0, 260, 120);
+    caption("坐垫是凹陷的，还有一点温度。", 3200);
+    setTimeout(()=>{ tvOn=true; setStatic(true); caption("身后，电视自己亮了。", 3600); EVT=Math.max(EVT,2); }, 1900);
+  }
+  if(hot.id==="toilet"){
+    toiletFlushed=true; flush();
+    setTimeout(()=>{ flush(); caption("它自己又冲了一次。你没有碰它。", 3800); }, 5200);
+  }
+  if(hot.id==="mb0"){ caption("音乐盒一动不动，像在等什么。", 3000); }
+  if(hot.id==="mb"){ openBox(); }
+}
+const MEMORY = "妈妈在厨房喊你的名字，喊了两遍。\n饭菜的热气糊住了窗，外面下着雪。\n你跑过去，围裙上是你最爱的那道菜的味道——\n可你想不起她的脸，也想不起，自己的名字。\n\n音乐盒的底座，刻着一行很小的字：\n「样本 7931 · 温暖 · 家 —— 已录入」。\n这段温暖，从来不是你的。\n是他们，放进来的。";
+let boxOpened=false;
+function openBox(){
+  if(boxOpened) return; boxOpened=true; frozen=true;
   if(document.pointerLockElement) document.exitPointerLock();
-  promptEl.classList.remove("show");
-  flashEl.classList.add("show");
-  // 打字机
+  const fEl=$("#flash"); fEl.classList.add("show");
   const ft=$("#flashText"); ft.textContent="";
   let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
     if(i>=MEMORY.length){ clearInterval(timer); setTimeout(()=>$("#flashBack").classList.add("show"),500); } }, 42);
 }
 $("#flashBack").addEventListener("click", ()=>{
-  // 记下这块碎片，回走廊
   try{ const c=JSON.parse(localStorage.getItem("mf3d_cleared")||"[]");
     if(!c.includes("warm")){ c.push("warm"); localStorage.setItem("mf3d_cleared", JSON.stringify(c)); } }catch(e){}
-  done=true; location.href="corridor3d.html";
+  location.href="corridor3d.html";
 });
 
-// ===== 循环 =====
-const clock=new THREE.Clock(); const SPEED=2.2, up=new THREE.Vector3(0,1,0);
-const mv=new THREE.Vector3(), right=new THREE.Vector3(); let started=false, t=0;
+// 事件推进（按位置触发）
+let doorSlammed=false, faceDone=false, figureGone=false;
+function director(dt){
+  // 开场：门自己关上
+  if(started && !doorSlammed){
+    doorSlammed=true;
+    setTimeout(()=>{ let v=0; const slam=()=>{ v+=0.10; entryHinge.rotation.y=Math.min(0,-1.25+v*1.35);
+        if(v<1){ requestAnimationFrame(slam); } else { entryHinge.rotation.y=0; thud();
+          caption("门在你身后关上了。", 3400); } }; slam(); }, 2200);
+  }
+  // 靠近雪花电视 → 一帧人脸
+  if(tvOn && !faceDone && nearFacing(TV,1.5,0.35)){
+    faceDone=true; faceFlash=0.5; sting();
+    setTimeout(()=>{
+      tvOn=false; setStatic(false); tvScreen&&(tvScreen.material.color.setHex(0x000000));
+      blackout=true; setHeart(true); caption("灯灭了。", 2600);
+      setTimeout(()=>{ blackout=false; setHeart(false);
+        bathDoorOpen=true; creak(2.2, 150, 70);
+        caption("走道深处，有一扇门开了。", 4200); EVT=Math.max(EVT,3);
+      }, 2900);
+    }, 500);
+  }
+  // 进卫生间 → 滴水
+  if(EVT>=3 && !dripTimer && camera.position.z<-5.1){
+    const loop=()=>{ drip(); dripTimer=setTimeout(loop, 1300+Math.random()*1800); }; loop();
+  }
+  // 照镜子 → 镜中人影 → 全屋灭灯 → 人影站在走道尽头
+  if(EVT>=3 && !mirrorSeen && nearFacing(MIRROR,1.15,0.5) && camera.position.z<-5.2){
+    mirrorSeen=true; figureMode="mirror";
+    setTimeout(()=>{ sting(); caption("镜子里，你身后站着一个人。", 3000); }, 900);
+    setTimeout(()=>{
+      figureMode="none"; blackout=true; setHeart(true);
+      setTimeout(()=>{
+        blackout=false; setHeart(false);
+        figureMode="hall"; figure.visible=true;
+        caption("走道的尽头。它在看你。", 4200); EVT=Math.max(EVT,4);
+      }, 3200);
+    }, 3400);
+  }
+  // 靠近人影 → 消失 → 湿脚印 → 音乐盒响
+  if(figureMode==="hall" && !figureGone){
+    figMat.opacity = Math.min(0.92, figMat.opacity+dt*0.5);
+    figure.position.y = 0.925 + Math.sin(tGlobal*1.1)*0.012;
+    figure.lookAt(camera.position.x, figure.position.y, camera.position.z);
+    const d=camera.position.distanceTo(figure.position);
+    if(d<2.3){
+      figureGone=true; figureMode="gone"; figure.visible=false;
+      sting(); thud();
+      caption("走道尽头没有人。可地板是湿的。", 4200);
+      let pi=0; const reveal=()=>{ if(pi<prints.length){ prints[pi++].material.opacity=0.75; setTimeout(reveal,260);}
+        else { mbPlaying=true; musicboxLoop();
+          mbLight.intensity=1.4; mbBase.material.emissive.setHex(0x2a1400);
+          caption("客厅里，音乐盒自己响了。", 4600); EVT=Math.max(EVT,5); } };
+      setTimeout(reveal, 900);
+    }
+  }
+}
+
+// ===== 主循环 =====
+const clock=new THREE.Clock(); const SPEED=1.9, up=new THREE.Vector3(0,1,0);
+const mv=new THREE.Vector3(), right=new THREE.Vector3();
+let started=false, frozen=true, tGlobal=0, boltT=8;
 function frame(){
   requestAnimationFrame(frame);
-  const dt=Math.min(0.05, clock.getDelta()); t+=dt;
-  if(started && !flashEl.classList.contains("show")){
+  const dt=Math.min(0.05, clock.getDelta()); tGlobal+=dt;
+  if(started && !frozen && !$("#flash").classList.contains("show")){
     camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize(); right.crossVectors(fwd,up).normalize();
     mv.set(0,0,0);
     if(keys["w"]||keys["arrowup"])mv.add(fwd); if(keys["s"]||keys["arrowdown"])mv.sub(fwd);
     if(keys["d"]||keys["arrowright"])mv.add(right); if(keys["a"]||keys["arrowleft"])mv.sub(right);
     if(padActive){ mv.addScaledVector(fwd,-padVec.y); mv.addScaledVector(right,padVec.x); }
-    if(mv.lengthSq()>0.0001){ mv.normalize().multiplyScalar(SPEED*dt); camera.position.add(mv);
-      camera.position.x=Math.max(-RX+0.35,Math.min(RX-0.35,camera.position.x));
-      camera.position.z=Math.max(-RZ+0.35,Math.min(RZ-0.35,camera.position.z)); }
+    if(mv.lengthSq()>0.0001){
+      mv.normalize().multiplyScalar(SPEED*dt);
+      const nx=camera.position.x+mv.x, nz=camera.position.z+mv.z;
+      if(walkable(nx,camera.position.z)) camera.position.x=nx;
+      if(walkable(camera.position.x,nz)) camera.position.z=nz;
+      stepAcc+=Math.hypot(mv.x,mv.z);
+      if(stepAcc>0.62){ stepAcc=0; foot(); }
+    }
+    director(dt);
   }
-  camera.position.y=1.6;
-  // 音乐盒微微呼吸发光
-  const pulse=0.8+Math.sin(t*1.6)*0.2; mbLight.intensity=1.4*pulse; mbGlow.material.opacity=0.7*pulse;
-  mbBase.material.emissiveIntensity=0.6+0.4*pulse;
+  camera.position.y=1.55;
+  // 灯闪烁
+  const flick = Math.random()<0.03 ? 0.4+Math.random()*0.3 : 1;
+  const lateFear = EVT>=4 ? (0.7+0.3*Math.sin(tGlobal*0.7)) : 1;
+  lrLight.intensity = blackout?0 : 3.4*flick*lateFear*(faceDone?0.75:1);
+  hallLight.intensity = blackout?0 : 1.1*(Math.random()<0.05?0.3:1);
+  hallBulb.material.color.setHex(blackout?0x111111:0xffe0ae);
+  // 卫生间冷灯管：EVT3 后疯狂频闪
+  if(EVT>=3 && !blackout){
+    const on = Math.random()<0.82;
+    bathLight.intensity = on? 1.6 : 0.12;
+    tube.material.color.setHex(on?0xd9ecff:0x11151b);
+  } else { bathLight.intensity=0; tube.material.color.setHex(0x0e1114); }
+  // 电视
+  if(tvOn){ drawStatic(); tvScreen&&(tvScreen.material.color.setHex(0xffffff), tvScreen.material.map=staticTex);
+    tvLight.intensity=1.1+Math.random()*0.9; }
+  else tvLight.intensity=Math.max(0,tvLight.intensity-dt*6);
+  if(faceFlash>0){ faceFlash-=dt;
+    if(tvScreen){ tvScreen.material.map=faceTex; tvScreen.material.color.setHex(0xffffff); }
+    tvLight.intensity=2.2;
+    if(faceFlash<=0 && tvScreen){ tvScreen.material.map=staticTex; } }
+  // 卫生间门开合
+  if(bathDoorOpen && bathDoorT<1){ bathDoorT=Math.min(1,bathDoorT+dt*0.16); bathHinge.rotation.y=-bathDoorT*1.9; }
+  // 窗雨 + 闪电
+  if((tGlobal*10|0)%2===0) drawRainTex();
+  boltT-=dt;
+  if(boltT<=0){ boltT=13+Math.random()*20; lightning=1; setTimeout(rumble, 400+Math.random()*800); }
+  lightning=Math.max(0,lightning-dt*2.4);
+  // 音乐盒亮度呼吸
+  if(mbPlaying){ const p=0.75+0.25*Math.sin(tGlobal*2.4); mbLight.intensity=1.5*p; }
+  $("#blk").classList.toggle("show", blackout);
   updatePrompt();
   composer.render();
 }
 const composer=new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene,camera));
-const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.6,0.6,0.8);
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.42,0.55,0.85);
 composer.addPass(bloom); composer.addPass(new OutputPass());
 function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); bloom.setSize(innerWidth,innerHeight); }
 addEventListener("resize", resize); resize(); frame();
 
-manager.onLoad=()=>{ const b=$("#goBtn"); b.disabled=false; b.textContent="推 门 进 去"; $("#gateHint").textContent="点击进入 · 找到那件发光的东西"; };
-$("#goBtn").addEventListener("click", ()=>{ if($("#goBtn").disabled)return; started=true;
-  $("#gate").classList.add("gone"); $("#cross").style.opacity="1"; if(!("ontouchstart" in window)) canvas.requestPointerLock(); });
-setTimeout(()=>{ const b=$("#goBtn"); if(b.disabled){ b.disabled=false; b.textContent="推 门 进 去"; } }, 3500);
+manager.onLoad=()=>{ const b=$("#goBtn"); b.disabled=false; b.textContent="推 门 回 家";
+  $("#gateHint").textContent="点击进入 · 客厅的灯还亮着"; };
+setTimeout(()=>{ const b=$("#goBtn"); if(b.disabled){ b.disabled=false; b.textContent="推 门 回 家"; } }, 6000);
+$("#goBtn").addEventListener("click", ()=>{ if($("#goBtn").disabled)return;
+  started=true; frozen=false; startRain();
+  $("#gate").classList.add("gone"); $("#cross").style.opacity="1";
+  if(!("ontouchstart" in window) && !QA.get("qa")) canvas.requestPointerLock();
+  caption("到家了。你不记得自己出过门。", 4200);
+});
 
-window.__room={ scene, camera, renderer, composer, frame, start(){started=true;}, MB_WORLD,
-  set yaw(v){yaw=v;applyLook();}, set pitch(v){pitch=v;applyLook();}, trigger:()=>{near=true;tryTouch();} };
+// ===== QA 钩子 =====
+if(QA.get("qa")){
+  $("#gate").classList.add("gone"); started=true; frozen=false; startRain=()=>{};
+  if(QA.get("px")) camera.position.x=parseFloat(QA.get("px"));
+  if(QA.get("pz")) camera.position.z=parseFloat(QA.get("pz"));
+  if(QA.get("yaw")) yaw=parseFloat(QA.get("yaw"));
+  if(QA.get("pitch")) pitch=parseFloat(QA.get("pitch"));
+  applyLook();
+  const e=parseInt(QA.get("evt")||"0");
+  if(e>=2){ sofaDone=true; }
+  if(e>=3){ EVT=3; bathDoorOpen=true; bathDoorT=0.99; faceDone=true; doorSlammed=true; entryHinge.rotation.y=0; }
+  if(e>=4){ mirrorSeen=true; figureMode="hall"; figure.visible=true; figMat.opacity=0.9; }
+  if(e>=5){ EVT=5; figureGone=true; figureMode="gone"; figure.visible=false;
+    for(const p of prints) p.material.opacity=0.75; mbLight.intensity=1.4; }
+  if(QA.get("tv")==="1"){ tvOn=true; }
+}
+window.__room={ scene, camera, renderer, get EVT(){return EVT;}, set EVT(v){EVT=v;},
+  set yaw(v){yaw=v;applyLook();}, set pitch(v){pitch=v;applyLook();},
+  figure, mirror, solids, walkable };
 </script>
 </body>
 </html>
