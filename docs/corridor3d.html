@@ -136,7 +136,7 @@ const $ = s => document.querySelector(s);
 const canvas = $("#c3d");
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -275,8 +275,11 @@ for (const d of DOORS) {
     const sconce = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.085, 0.17, 10, 1, true),
       new THREE.MeshStandardMaterial({ color:0xd8c9a2, emissive:0x6b4d1c, emissiveIntensity:1, side:THREE.DoubleSide }));
     add(sconce, dxl, 2.12, 0.10);
-    const sl = new THREE.PointLight(0xffd9a2, 0.85, 4.5, 2);
-    sl.position.set(wx - d.side*0.16, 2.18, d.z + dxl*(d.side>0?1:-1)); scene.add(sl);
+    const shalo = new THREE.Mesh(new THREE.PlaneGeometry(0.68,0.68),
+      new THREE.MeshBasicMaterial({ map:GLOW, color:0xffd9a2, transparent:true, opacity:.4,
+        blending:THREE.AdditiveBlending, depthWrite:false }));
+    shalo.material.opacity=0.28;
+    add(shalo, dxl, 2.14, 0.12);
   }
   doorObjs.push({ d, x:wx, z:d.z, hinge, pl, plBase:2.0 });
 }
@@ -329,7 +332,7 @@ const selfTex = texL.load("./assets/characters/mirror_self.png"); selfTex.colorS
 const CY = MIR_H/2 + 0.12;                 // 镜子竖直中心
 // 真反射镜面（照出走廊/吊灯/手电）——这才让它像镜子
 const reflector = new Reflector(new THREE.PlaneGeometry(MIR_W, MIR_H), {
-  textureWidth: 1024, textureHeight: 1024, color: 0x3a4048, clipBias: 0.003 });
+  textureWidth: 512, textureHeight: 512, color: 0x3a4048, clipBias: 0.003 });
 reflector.position.set(0, CY, MIR_Z-0.05); scene.add(reflector);
 // 反射渲染时把「镜中人」和脏雾藏掉，避免被镜面二次反射出鬼影
 reflector.onBeforeRender = (function(orig){ return function(r,s,c){
@@ -361,7 +364,7 @@ scene.add(new THREE.AmbientLight(0x2c3038, 2.6));
 const lamps = [];
 for (let z = -3; z > Z1+3; z -= 9) {
   const L = new THREE.PointLight(0xffd79a, 5, 18, 2); L.position.set(0, H-0.3, z);
-  L.castShadow = true; L.shadow.mapSize.set(512,512); L.shadow.bias = -0.002; scene.add(L);
+  scene.add(L);   // 不投影:点光源阴影每盏=6面渲染,5盏把GPU打满
   const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshBasicMaterial({ color:0xffe6b4 }));
   bulb.position.copy(L.position); scene.add(bulb);
   const cage = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.34,8,1,true),
@@ -371,7 +374,7 @@ for (let z = -3; z > Z1+3; z -= 9) {
 }
 // 手电筒
 const flash = new THREE.SpotLight(0xfff2d8, 2.0, 26, Math.PI/5, 0.6, 1.4);
-flash.castShadow = true; flash.shadow.mapSize.set(1024,1024); flash.shadow.camera.far = 24;
+flash.castShadow = true; flash.shadow.mapSize.set(512,512); flash.shadow.camera.far = 24;
 scene.add(flash); scene.add(flash.target);
 
 // ===== 第一人称控制（自写：偏航/俯仰，桌面指针锁定 + 触屏拖动）=====
@@ -545,6 +548,7 @@ function frame(){
     lamps[i].L.intensity = lamps[i].base * Math.max(0.2, f);
   }
   // 镜子：进度→清晰（脏雾渐退、镜中人渐显）
+  reflector.visible = camera.position.z < -26;   // 离镜子远时停掉反射渲染(省一整遍场景)
   mirror.clarity += (mirror.progress - mirror.clarity) * Math.min(1, dt*1.8);
   selfMat.opacity = 0.08 + 0.92*mirror.clarity;
   const cc = 0.5 + 0.5*mirror.clarity; selfMat.color.setRGB(cc*0.88, cc*0.95, cc);

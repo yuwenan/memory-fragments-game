@@ -92,7 +92,7 @@ const $ = s => document.querySelector(s);
 const QA = new URLSearchParams(location.search);
 const canvas = $("#c3d");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
 
@@ -196,7 +196,7 @@ function drawRainTex(){
 // ===== 灯 =====
 scene.add(new THREE.AmbientLight(0x2a2620, 1.7));
 const lrLight = new THREE.PointLight(0xffd9a2, 3.4, 12, 1.8); lrLight.position.set(0,2.28,0);
-lrLight.castShadow=true; lrLight.shadow.mapSize.set(1024,1024); scene.add(lrLight);
+lrLight.castShadow=true; lrLight.shadow.mapSize.set(512,512); scene.add(lrLight);
 const hallLight = new THREE.PointLight(0xffc98a, 1.1, 6, 2.2); hallLight.position.set(0.1,2.15,-3.7); scene.add(hallLight);
 const hallBulb = new THREE.Mesh(new THREE.SphereGeometry(0.045,10,8),
   new THREE.MeshBasicMaterial({ color:0xffe0ae })); hallBulb.position.copy(hallLight.position); scene.add(hallBulb);
@@ -308,7 +308,7 @@ const sinkG = new THREE.Group(); sinkG.position.set(0.55,0,-6.82); scene.add(sin
 solids.push({x:0.55, z:-6.82, r:0.32});
 // 镜子（真反射）
 const mirror = new Reflector(new THREE.PlaneGeometry(0.5,0.66), {
-  textureWidth:512, textureHeight:512, color:0x889096 });
+  textureWidth:256, textureHeight:256, color:0x889096 });
 mirror.position.set(0.55,1.52,-6.99); scene.add(mirror);
 const mirFrame = box(new THREE.MeshStandardMaterial({color:0x2a2d30, roughness:.5}), 0.56,0.72,0.03, 0.55,1.52,-7.02);
 const MIRROR = new THREE.Vector3(0.55,1.4,-6.99);
@@ -607,6 +607,7 @@ function frame(){
     director(dt);
   }
   camera.position.y=1.55;
+  mirror.visible = camera.position.z < -4.6;   // 不在卫生间不渲反射
   // 灯闪烁
   const flick = Math.random()<0.03 ? 0.4+Math.random()*0.3 : 1;
   const lateFear = EVT>=4 ? (0.7+0.3*Math.sin(tGlobal*0.7)) : 1;

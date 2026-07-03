@@ -70,7 +70,7 @@ const $ = s => document.querySelector(s);
 const QA = new URLSearchParams(location.search);
 const canvas = $("#c3d");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 80);
