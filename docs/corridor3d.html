@@ -136,9 +136,8 @@ const $ = s => document.querySelector(s);
 const canvas = $("#c3d");
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));   // 性能:与房间页对齐
+renderer.shadowMap.enabled = false;                          // 性能:实时阴影整页关(与房间页同方)
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.4;
 
@@ -593,7 +592,7 @@ function frame(){
 // ===== 后期 =====
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.5, 0.82);
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.7, 0.5, 0.82);   // 性能:降采样与房间页对齐
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
