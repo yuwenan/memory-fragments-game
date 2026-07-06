@@ -27,6 +27,7 @@
   #prompt.show{opacity:1;}
   #blk{position:fixed;inset:0;z-index:14;background:#000;opacity:0;pointer-events:none;transition:opacity .5s;}
   #blk.show{opacity:1;}
+  #fadein{position:fixed;inset:0;z-index:13;background:#000;opacity:0;pointer-events:none;transition:opacity 1.6s;}
   #flash{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 40%,#16202a,#05070a 75%);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;padding:0 26px;
     opacity:0;pointer-events:none;transition:opacity 1.2s;}
@@ -63,6 +64,7 @@
 <div id="cap"></div>
 <div id="prompt"></div>
 <div id="blk"></div>
+<div id="fadein"></div>
 <div id="flash">
   <div class="fk">记 忆 碎 片</div>
   <p class="ft" id="flashText"></p>
@@ -603,6 +605,19 @@ $("#goBtn").addEventListener("click", ()=>{ if($("#goBtn").disabled)return;
   if(!bellDone){ bellDone=true; bell(); }
   caption("晚自习早就结束了。可你还坐过这里。", 4200);
 });
+// 从走廊开门过场进来:不停黑底按钮页,黑场直接淡进教室
+if(!QA.get("qa") && QA.get("from")==="corridor"){
+  $("#gate").classList.add("gone");
+  const fadeEl=$("#fadein"); fadeEl.style.opacity="1"; fadeEl.style.transition="none";
+  started=true; frozen=false; $("#cross").style.opacity="1";
+  setTimeout(()=>{ fadeEl.style.transition="opacity 1.8s"; fadeEl.style.opacity="0";
+    caption("晚自习早就结束了。可你还坐过这里。", 4200); }, 350);
+}
+// 声音要用户手势:第一次点击/按键自动接上
+{ const unlock=()=>{ const a=au(); if(a && a.state==="suspended") a.resume();
+    startBuzz(); if(!bellDone){ bellDone=true; bell(); }
+    removeEventListener("pointerdown", unlock); removeEventListener("keydown", unlock); };
+  addEventListener("pointerdown", unlock); addEventListener("keydown", unlock); }
 
 // ===== QA 钩子 =====
 if(QA.get("qa")){

@@ -459,7 +459,7 @@ function tryEnter(){
   if(atDoor.d.origin){ $("#restart").classList.add("show"); return; }   // 觉醒室门 → 问是否重新开始
   const url = ROOM_URLS[atDoor.d.id];
   openDoorCinematic(atDoor, ()=>{
-    if(url){ location.href = url; return; }                             // 有真房间 → 进房间
+    if(url){ location.href = url + "?from=corridor"; return; }          // 有真房间 → 无缝落进房间
     // cold 暂占位：标记通关（等真房间做好换成各自页面）
     if(!CLEARED.has(atDoor.d.id)){ CLEARED.add(atDoor.d.id); saveCleared(); mirror.progress = CLEARED.size/3; }
     $("#stubText").textContent=atDoor.d.stub; stubEl.classList.add("show");
