@@ -348,7 +348,6 @@ loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
 loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
-loadModel("wheelchair_01",         { x:-0.72, z:-5.6, rotY: 2.4, solidR:0.42 });
 loadModel("wooden_table_02",       { x:3.7, z:-0.1, rotY: 0.3, solidR:0.75 });
 loadModel("painted_wooden_chair_01",{ x:3.1, z:-0.75, rotY: 0.5, solidR:0.28 });
 loadModel("painted_wooden_chair_01",{ x:4.3, z:0.45, rotY: -2.4, solidR:0.28 });
@@ -496,6 +495,7 @@ function addNoise(v){
   if(noise>=1 && momState==="in") momOut();
 }
 function momOut(){
+  if(shadowT>=0){ shadowT=-1; momMat.opacity=0.97; }   // 影子过场让位真身
   momState="out"; noise=1;
   creak(1.6, 140, 70);                                                          // 卧室门自己开了
   bedHinge.rotation.y=0.9;
@@ -666,7 +666,7 @@ function hitSolid(x,z){
 function walkable(x,z){
   const inLR   = x>-3.35 && x<1.85 && z>-2.45 && z<2.45;
   const inKit  = x>1.85 && x<5.25 && z>-2.45 && z<0.85;
-  const inHall = x>-0.85 && x<0.25 && z>-6.05 && z<-2.5;
+  const inHall = x>-0.85 && x<0.25 && z>-6.05 && z<-2.35;   // 上沿盖过客厅边界(原-2.5与-2.45间留了死缝=空气墙)
   const inBath = x>-2.25 && x<0.75 && z>-8.25 && z<-6.0;
   if(!(inLR||inKit||inHall||inBath)) return false;
   if(x>1.82 && x<2.18 && !(z>-1.15 && z<0.35)) return false;                 // 厨房隔墙
@@ -688,9 +688,8 @@ function caption(text, ms){
 let EVT=0;
 let sofaDone=false, toiletFlushed=false, mirrorSeen=false, blackout=false;
 let sinkDone=false, fridgeDone=false;
-let bowlsDone=false, photoDone=false, drawDone=false, booksDone=false, wheelDone=false;
+let bowlsDone=false, photoDone=false, drawDone=false, booksDone=false;
 const BOOKS = new THREE.Vector3(-2.0,1.2,-2.42);
-const WHEEL = new THREE.Vector3(-0.72,0.6,-5.6);
 const promptEl=$("#prompt");
 const fwd=new THREE.Vector3(), toV=new THREE.Vector3();
 function nearFacing(target, maxD, minFace){
@@ -714,7 +713,6 @@ function updatePrompt(){
   else if(nearFacing(PHOTO,1.7)&&!photoDone) hot={id:"photo", tip:"按 E 看全家福"};
   else if(nearFacing(DRAW,1.7)&&!drawDone) hot={id:"draw", tip:"按 E 看那张画"};
   else if(nearFacing(BOOKS,1.5)&&!booksDone) hot={id:"books", tip:"按 E 翻翻书架"};
-  else if(nearFacing(WHEEL,1.5)&&!wheelDone) hot={id:"wheel", tip:"按 E 碰碰轮椅"};
   else if(nearFacing(MB,1.4)){ hot = EVT>=5 ? {id:"mb", tip:"按 E 打开音乐盒"} : {id:"mb0", tip:"按 E 看看音乐盒"}; }
   if(hot){ promptEl.textContent=hot.tip; promptEl.classList.add("show"); }
   else promptEl.classList.remove("show");
@@ -757,10 +755,6 @@ function act(){
   if(hot.id==="books"){
     booksDone=true; creak(0.5, 320, 220); addNoise(0.22);
     caption("一整排书，书脊全是空白。抽出一本——里面一个字也没有。", 4400);
-  }
-  if(hot.id==="wheel"){
-    wheelDone=true; creak(1.2, 200, 110); addNoise(0.25);
-    caption("轮椅还在轻轻晃，像刚有人从上面站起来。", 4200);
   }
   if(hot.id==="mb0"){ caption("音乐盒一动不动，像在等什么。", 3000); }
   if(hot.id==="mb"){ addNoise(0.4); openBox(); }
@@ -816,9 +810,25 @@ function momBack(dt){
   if(Math.hypot(camera.position.x-mom.position.x, camera.position.z-mom.position.z)<0.9) death();
 }
 
+// 保底人影演出:不管出没出声,第一次靠近走道口,妈妈的影子在尽头闪过(先让玩家知道"屋里有别人")
+let shadowCrossed=false, shadowT=-1;
+function shadowCross(dt){
+  if(shadowT<0) return;
+  shadowT+=dt;
+  const k=shadowT/1.1;
+  if(k>=1){ mom.visible=false; momMat.opacity=0.97; shadowT=-1;
+    caption("走道尽头，有个影子闪过去了。", 3800); return; }
+  mom.visible=true; momMat.opacity=0.9*Math.sin(Math.min(1,k)*Math.PI);
+  mom.position.set(-0.75+k*1.0, 0.9, -5.7);
+  mom.lookAt(camera.position.x, 0.9, camera.position.z);
+}
+
 let doorSlammed=false, faceDone=false, figureGone=false;
 function director(dt){
-  momStep(dt); momBack(dt);
+  momStep(dt); momBack(dt); shadowCross(dt);
+  if(!shadowCrossed && camera.position.z<-2.2 && momState==="in"){
+    shadowCrossed=true; shadowT=0; sting();
+  }
   if(started && !doorSlammed){
     doorSlammed=true;
     setTimeout(()=>{ let v=0; const slam=()=>{ v+=0.10; entryHinge.rotation.y=Math.min(0,-1.25+v*1.35);
