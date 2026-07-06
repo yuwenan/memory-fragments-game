@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>记忆碎片 · 冷光的门后</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#cfdde8;}
+  #c3d{position:fixed;inset:0;display:block;}
+  #vig{position:fixed;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse 74% 68% at 50% 46%,transparent 46%,rgba(0,0,0,.58) 100%);}
+  #grain{position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.045;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:grain .5s steps(2) infinite;}
+  @keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-6%,4%)}100%{transform:translate(4%,-5%)}}
+  #cross{position:fixed;left:50%;top:50%;z-index:8;width:5px;height:5px;margin:-2.5px;border-radius:50%;
+    background:rgba(210,230,245,.5);box-shadow:0 0 4px rgba(0,0,0,.8);pointer-events:none;opacity:0;transition:opacity .3s;}
+  #tag{position:fixed;left:14px;top:12px;z-index:10;font-size:12px;letter-spacing:1px;color:#47555f;pointer-events:none;}
+  #cap{position:fixed;left:0;right:0;top:10%;z-index:10;text-align:center;font-size:15px;letter-spacing:3px;
+    color:#d4e2ec;text-shadow:0 0 14px rgba(0,0,0,.9),0 2px 8px #000;opacity:0;transition:opacity .7s;pointer-events:none;}
+  #cap.show{opacity:1;}
+  #prompt{position:fixed;left:50%;top:56%;z-index:9;transform:translateX(-50%);padding:8px 18px;
+    border:1px solid rgba(150,190,220,.45);border-radius:24px;background:rgba(10,16,20,.84);font-size:15px;
+    letter-spacing:2px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 24px rgba(120,180,230,.14);
+    opacity:0;pointer-events:none;transition:opacity .2s;}
+  #prompt.show{opacity:1;}
+  #blk{position:fixed;inset:0;z-index:14;background:#000;opacity:0;pointer-events:none;transition:opacity .5s;}
+  #blk.show{opacity:1;}
+  #flash{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 40%,#16202a,#05070a 75%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;padding:0 26px;
+    opacity:0;pointer-events:none;transition:opacity 1.2s;}
+  #flash.show{opacity:1;pointer-events:auto;}
+  #flash .fk{font-size:14px;letter-spacing:6px;color:#6f8ba0;}
+  #flash .ft{max-width:600px;font-size:19px;line-height:2.2;letter-spacing:2px;color:#d5e3ee;
+    white-space:pre-line;min-height:9em;text-shadow:0 2px 10px #000;}
+  #flash .fb{opacity:0;transition:opacity 1s;}
+  #flash .fb.show{opacity:1;}
+  .btn{padding:11px 30px;border:1px solid rgba(150,190,220,.5);border-radius:4px;background:rgba(14,24,32,.6);
+    color:#cfe3f2;font-size:15px;letter-spacing:3px;cursor:pointer;}
+  .btn:hover{background:rgba(26,44,58,.7);}
+  #gate{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;background:#030507;text-align:center;transition:opacity .8s;}
+  #gate.gone{opacity:0;pointer-events:none;}
+  #gate .s{font-size:13px;letter-spacing:3px;color:#5a707f;}
+  #gate .go{margin-top:4px;padding:12px 34px;border:1px solid rgba(150,190,220,.55);border-radius:4px;
+    background:rgba(14,24,32,.5);color:#cfe3f2;font-size:15px;letter-spacing:4px;cursor:pointer;}
+  #pad{position:fixed;left:26px;bottom:32px;z-index:11;width:128px;height:128px;border-radius:50%;
+    border:1px solid rgba(150,190,220,.22);background:rgba(10,16,22,.32);touch-action:none;display:none;}
+  #pad i{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px;border-radius:50%;
+    background:rgba(150,190,220,.3);border:1px solid rgba(160,200,230,.5);}
+  #eBtn{position:fixed;right:30px;bottom:60px;z-index:11;width:76px;height:76px;border-radius:50%;
+    border:1px solid rgba(150,190,220,.4);background:rgba(14,24,32,.5);color:#cfe3f2;font-size:20px;
+    display:none;align-items:center;justify-content:center;touch-action:none;}
+  @media (pointer:coarse){#pad{display:block;}#eBtn{display:flex;}}
+</style>
+</head>
+<body>
+<canvas id="c3d"></canvas>
+<div id="vig"></div><div id="grain"></div>
+<div id="cross"></div>
+<div id="tag">冷光的门后 · 教室</div>
+<div id="cap"></div>
+<div id="prompt"></div>
+<div id="blk"></div>
+<div id="flash">
+  <div class="fk">记 忆 碎 片</div>
+  <p class="ft" id="flashText"></p>
+  <button class="btn fb" id="flashBack">收 起 这 段 记 忆</button>
+</div>
+<div id="pad"><i></i></div>
+<div id="eBtn">E</div>
+<div id="gate">
+  <div class="s">冷 光 的 门 后</div>
+  <button class="go" id="goBtn" disabled>灯管还在嗡嗡响…</button>
+  <div class="s" id="gateHint">晚自习，早就该结束了</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./assets/lib/three.module.js", "three/addons/": "./assets/lib/" }}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+const $ = s => document.querySelector(s);
+const QA = new URLSearchParams(location.search);
+const canvas = $("#c3d");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+renderer.shadowMap.enabled = false;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020304);
+scene.fog = new THREE.FogExp2(0x070a0c, 0.035);
+const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.04, 60);
+camera.position.set(2.7, 1.55, 2.5);
+const solids = [];
+
+// ===== 材质（复用 home 纹理，调冷色）=====
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+const manager = new THREE.LoadingManager();
+const texL = new THREE.TextureLoader(manager);
+function pbr(name, repX, repY, tint){
+  const load = (suffix, srgb) => { const t = texL.load(`./assets/home/textures/${name}_${suffix}.jpg`);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repX, repY); t.anisotropy = maxAniso;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const m = new THREE.MeshStandardMaterial({ map:load("color",true), normalMap:load("normal",false),
+    roughnessMap:load("rough",false), roughness:1, metalness:0, color:tint, side:THREE.DoubleSide });
+  m.normalScale.set(0.35,0.35); return m;
+}
+const wallMat  = pbr("wall", 5, 1.8, 0x9fa8a0);        // 灰白墙(泛旧)
+const floorMat = pbr("floor", 5, 4, 0x8e9086);         // 灰绿旧木地板
+const ceilMat  = pbr("wall", 4, 3, 0x6f766f);
+const wainMat  = new THREE.MeshStandardMaterial({ color:0x274436, roughness:.72 });   // 绿墙裙
+const woodDesk = new THREE.MeshStandardMaterial({ color:0x6d5638, roughness:.62 });
+const woodDark = new THREE.MeshStandardMaterial({ color:0x3a2c1c, roughness:.68 });
+const steelM   = new THREE.MeshStandardMaterial({ color:0x565c60, roughness:.42, metalness:.75 });
+
+// ===== 房间壳 x[-4.2,4.2] z[-3.4,3.4] 高3.2；讲台/黑板在 -z，后门在 +z =====
+function box(mat,w,h,d,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z); scene.add(m); return m; }
+function plane(mat,w,h,pos,rot){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
+  m.position.set(...pos); if(rot)m.rotation.set(...rot); scene.add(m); return m; }
+plane(floorMat, 8.4, 6.8, [0,0,0], [-Math.PI/2,0,0]);
+plane(ceilMat, 8.4, 6.8, [0,3.2,0], [Math.PI/2,0,0]);
+box(wallMat, 8.4, 3.2, 0.1, 0, 1.6, -3.45);            // 前墙(黑板)
+box(wallMat, 8.4, 3.2, 0.1, 0, 1.6, 3.45);             // 后墙(黑板报+后门)
+box(wallMat, 0.1, 3.2, 6.8, -4.25, 1.6, 0);            // 西墙(窗)
+box(wallMat, 0.1, 3.2, 6.8, 4.25, 1.6, 0);             // 东墙(走廊侧)
+// 绿墙裙(中国老教室标配)+ 白粉笔槽踢脚
+for(const [w,h,d,x,y,z] of [[8.36,1.05,0.05,0,0.525,-3.39],[8.36,1.05,0.05,0,0.525,3.39],
+    [0.05,1.05,6.76,-4.19,0.525,0],[0.05,1.05,6.76,4.19,0.525,0]]) box(wainMat,w,h,d,x,y,z);
+
+// ===== 黑板(前墙) + 自己写字的粉笔层 =====
+box(woodDark, 3.9, 1.5, 0.05, 0, 1.55, -3.42);                       // 木框
+const chalkCv = document.createElement("canvas"); chalkCv.width=768; chalkCv.height=288;
+const chalkTex = new THREE.CanvasTexture(chalkCv);
+const cx2d = chalkCv.getContext("2d");
+function chalkBase(){
+  cx2d.fillStyle="#15241c"; cx2d.fillRect(0,0,768,288);
+  cx2d.strokeStyle="rgba(210,220,214,0.05)";                          // 没擦干净的旧粉笔痕
+  for(let i=0;i<40;i++){ cx2d.lineWidth=Math.random()*10+4; cx2d.beginPath();
+    const y=Math.random()*288; cx2d.moveTo(Math.random()*300,y); cx2d.lineTo(300+Math.random()*468,y+(Math.random()-0.5)*30); cx2d.stroke(); }
+  chalkTex.needsUpdate=true;
+}
+chalkBase();
+plane(new THREE.MeshStandardMaterial({ map:chalkTex, roughness:.92 }), 3.7, 1.32, [0,1.55,-3.39]);
+box(wainMat, 3.9, 0.06, 0.12, 0, 0.76, -3.38);                        // 粉笔槽
+// 槽里几截粉笔
+for(const [px,len] of [[-1.2,0.06],[-0.4,0.045],[0.9,0.07]])
+  box(new THREE.MeshStandardMaterial({color:0xe8e6da,roughness:.9}), len,0.014,0.014, px,0.80,-3.36);
+const BOARD = new THREE.Vector3(0, 1.5, -3.4);
+// 黑板上方标语牌(褪色红字)
+{ const cv=document.createElement("canvas"); cv.width=512; cv.height=64; const x=cv.getContext("2d");
+  x.fillStyle="#2a2622"; x.fillRect(0,0,512,64);
+  x.font="bold 40px 'PingFang SC','Microsoft YaHei',sans-serif"; x.textAlign="center"; x.textBaseline="middle";
+  x.fillStyle="rgba(150,60,50,0.55)"; x.fillText("好 好 学 习      天 天 向 上", 256, 34);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  plane(new THREE.MeshStandardMaterial({map:t,roughness:.85}), 2.6, 0.32, [0,2.75,-3.39]); }
+
+// ===== 讲台 + 教师桌 + 台灯(最后唯一的光) =====
+box(woodDark, 3.0, 0.14, 1.15, 0, 0.07, -2.78);                       // 水泥讲台木包边
+const tdesk = new THREE.Group(); tdesk.position.set(1.15, 0.14, -2.78); scene.add(tdesk);
+{ const top=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.05,0.55), woodDesk); top.position.y=0.78; tdesk.add(top);
+  const front=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.72,0.04), woodDesk); front.position.set(0,0.40,0.25); tdesk.add(front);
+  for(const sx of [-0.47,0.47]){ const side=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.72,0.5), woodDesk);
+    side.position.set(sx,0.40,0); tdesk.add(side); } }
+solids.push({rect:true, x0:0.6, x1:1.7, z0:-3.1, z1:-2.45});
+// 台灯(绿罩老式)
+{ const base=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.02,12), steelM); base.position.set(1.5,0.97,-2.85); scene.add(base);
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.3,8), steelM); arm.position.set(1.5,1.12,-2.85); scene.add(arm);
+  const shade=new THREE.Mesh(new THREE.SphereGeometry(0.09,12,8,0,Math.PI*2,0,1.4),
+    new THREE.MeshStandardMaterial({color:0x1e4434,roughness:.4,emissive:0x0c2418,emissiveIntensity:1,side:THREE.DoubleSide}));
+  shade.position.set(1.5,1.27,-2.85); scene.add(shade); }
+const deskLamp = new THREE.PointLight(0xd7e6c8, 0.9, 5.5, 1.9); deskLamp.position.set(1.5,1.2,-2.85); scene.add(deskLamp);
+// 点名册(教师桌上)
+const roster = box(new THREE.MeshStandardMaterial({color:0x5a3026,roughness:.6}), 0.26,0.025,0.34, 1.05,0.82,-2.78);
+roster.rotation.y=0.18;
+const ROSTER = new THREE.Vector3(1.05, 0.9, -2.78);
+// 讲台边掉着的戒尺(先藏着,人影消失后出现)
+const ruler = box(woodDark, 0.5,0.012,0.035, -0.4,0.15,-2.5); ruler.rotation.y=0.5; ruler.visible=false;
+
+// ===== 广播喇叭(前墙高处) =====
+{ const spk=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.3,0.2),
+    new THREE.MeshStandardMaterial({color:0x6a6252,roughness:.8}));
+  spk.position.set(3.5,2.8,-3.3); scene.add(spk);
+  const grill=new THREE.Mesh(new THREE.PlaneGeometry(0.32,0.2),
+    new THREE.MeshStandardMaterial({color:0x211d16,roughness:.9})); grill.position.set(3.5,2.8,-3.19); scene.add(grill); }
+
+// ===== 课桌椅 4列×4排(第3排第3列是"你的") =====
+const COLS=[-2.85,-1.35,0.75,2.25], ROWS=[-1.1,0.05,1.2,2.35];
+const MY_C=2, MY_R=2;   // 你的课桌 (0.75, 1.2)
+let myLid=null, myLidOpen=0;
+function desk(x,z,mine){
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.035,0.44), woodDesk);   // 掀盖桌面
+  lid.position.set(0,0.72,0);
+  const lidH=new THREE.Group(); lidH.position.set(0,0.72,-0.22); lid.position.set(0,0,0.22); lidH.add(lid); g.add(lidH);
+  const tray=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.1,0.42),woodDark); tray.position.set(0,0.62,0); g.add(tray);
+  for(const [lx,lz] of [[-0.27,-0.17],[0.27,-0.17],[-0.27,0.17],[0.27,0.17]]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.7,0.04), steelM); leg.position.set(lx,0.35,lz); g.add(leg); }
+  // 椅子(桌后 +z)
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(0.38,0.03,0.36), woodDesk); seat.position.set(0,0.45,0.52); g.add(seat);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(0.38,0.3,0.03), woodDesk); back.position.set(0,0.72,0.68); g.add(back);
+  for(const [lx,lz] of [[-0.16,0.38],[0.16,0.38],[-0.16,0.66],[0.16,0.66]]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.45,0.035), steelM); leg.position.set(lx,0.225,lz); g.add(leg); }
+  solids.push({rect:true, x0:x-0.36, x1:x+0.36, z0:z-0.28, z1:z+0.78});
+  if(mine){ myLid=lidH;
+    // 桌面刻字
+    const cv=document.createElement("canvas"); cv.width=256; cv.height=128; const c2=cv.getContext("2d");
+    c2.fillStyle="#6d5638"; c2.fillRect(0,0,256,128);
+    c2.font="26px 'PingFang SC',sans-serif"; c2.fillStyle="rgba(30,20,10,0.85)";
+    c2.save(); c2.translate(128,64); c2.rotate(-0.08); c2.fillText("我没有说谎",-70,8); c2.restore();
+    const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+    lid.material=new THREE.MeshStandardMaterial({map:t,roughness:.62});
+  }
+  return g;
+}
+for(let c=0;c<COLS.length;c++) for(let r=0;r<ROWS.length;r++) desk(COLS[c],ROWS[r], c===MY_C&&r===MY_R);
+const MYDESK = new THREE.Vector3(COLS[MY_C], 0.75, ROWS[MY_R]);
+// 课桌里的卷子(开盖后可见)
+const paperCv=document.createElement("canvas"); paperCv.width=256; paperCv.height=192;
+{ const c2=paperCv.getContext("2d"); c2.fillStyle="#cfc9b4"; c2.fillRect(0,0,256,192);
+  c2.strokeStyle="rgba(60,60,70,0.5)"; for(let y=42;y<190;y+=18){ c2.beginPath(); c2.moveTo(14,y); c2.lineTo(242,y); c2.stroke(); }
+  c2.font="bold 64px serif"; c2.fillStyle="rgba(170,30,20,0.9)"; c2.fillText("0", 190, 60);
+  c2.font="20px 'PingFang SC',sans-serif"; c2.fillStyle="rgba(160,30,20,0.8)";
+  c2.save(); c2.translate(60,120); c2.rotate(-0.06); c2.fillText("这么简单都不会",0,0); c2.restore(); }
+const paperTex=new THREE.CanvasTexture(paperCv); paperTex.colorSpace=THREE.SRGBColorSpace;
+const paper=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.22),
+  new THREE.MeshStandardMaterial({map:paperTex,roughness:.9}));
+paper.rotation.x=-Math.PI/2; paper.position.set(COLS[MY_C],0.685,ROWS[MY_R]); paper.visible=false; scene.add(paper);
+const paperGlow=new THREE.PointLight(0xbfd8e8, 0, 1.6, 2); paperGlow.position.set(COLS[MY_C],0.9,ROWS[MY_R]); scene.add(paperGlow);
+
+// ===== 西墙夜窗×3(月光+远处操场灯) =====
+const nightCv=document.createElement("canvas"); nightCv.width=128; nightCv.height=128;
+{ const x=nightCv.getContext("2d");
+  const g=x.createLinearGradient(0,0,0,128); g.addColorStop(0,"#0a1524"); g.addColorStop(1,"#04070c");
+  x.fillStyle=g; x.fillRect(0,0,128,128);
+  x.fillStyle="rgba(200,215,235,0.75)"; x.beginPath(); x.arc(96,26,9,0,7); x.fill();       // 月亮
+  x.fillStyle="rgba(200,215,235,0.12)"; x.beginPath(); x.arc(96,26,15,0,7); x.fill();
+  x.fillStyle="rgba(255,220,140,0.25)"; x.fillRect(10,96,3,3); x.fillRect(30,102,3,3);     // 远处操场灯
+}
+const nightTex=new THREE.CanvasTexture(nightCv); nightTex.colorSpace=THREE.SRGBColorSpace;
+const winFrameM=new THREE.MeshStandardMaterial({ color:0x3d4a44, roughness:.6 });
+for(const wz of [-1.9,0,1.9]){
+  const g=new THREE.Group(); g.position.set(-4.19,1.75,wz); g.rotation.y=Math.PI/2; scene.add(g);
+  for(const [w,h,px,py] of [[1.5,0.06,0,0.66],[1.5,0.06,0,-0.66],[0.06,1.38,-0.75,0],[0.06,1.38,0.75,0],[0.05,1.3,0,0]]){
+    const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.07),winFrameM); f.position.set(px,py,0); g.add(f); }
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.44,1.26), new THREE.MeshBasicMaterial({ map:nightTex }));
+  glass.position.z=-0.02; g.add(glass);
+}
+const moonLight=new THREE.PointLight(0x5a7290, 0.55, 9, 2); moonLight.position.set(-3.4,2.2,0); scene.add(moonLight);
+
+// ===== 后墙:黑板报(褪色) + 后门(会自己合上) =====
+{ const cv=document.createElement("canvas"); cv.width=512; cv.height=192; const x=cv.getContext("2d");
+  x.fillStyle="#182420"; x.fillRect(0,0,512,192);
+  x.font="bold 44px 'PingFang SC',sans-serif"; x.fillStyle="rgba(190,150,120,0.28)"; x.fillText("期 末 冲 刺", 40, 70);
+  x.strokeStyle="rgba(150,190,160,0.2)"; x.lineWidth=3;
+  x.beginPath(); x.arc(420,100,44,0,7); x.stroke();                    // 褪色太阳花
+  for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; x.beginPath();
+    x.moveTo(420+Math.cos(a)*50,100+Math.sin(a)*50); x.lineTo(420+Math.cos(a)*66,100+Math.sin(a)*66); x.stroke(); }
+  x.font="18px 'PingFang SC',sans-serif"; x.fillStyle="rgba(170,180,175,0.22)";
+  x.fillText("距离期末考试还有 ▢▢ 天", 46, 130);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  box(woodDark, 3.3, 1.35, 0.05, -0.8, 1.6, 3.42);
+  plane(new THREE.MeshStandardMaterial({map:t,roughness:.92}), 3.1, 1.18, [-0.8,1.6,3.38], [0,Math.PI,0]); }
+// 后门(推拉,进来后自己合上)
+const backDoor=new THREE.Mesh(new THREE.BoxGeometry(0.95,2.15,0.06), woodDark);
+backDoor.position.set(2.0,1.075,3.4); scene.add(backDoor);            // 开着:让出 x[2.5,3.4]的门洞
+box(woodDark, 0.08,2.2,0.1, 2.48,1.1,3.42); box(woodDark, 0.08,2.2,0.1, 3.42,1.1,3.42);
+let doorT=0, doorClosed=false;
+
+// ===== 天花日光灯 2列×3排 =====
+const tubes=[];   // {mesh, light, row}  row: 0=后 1=中 2=前
+for(let ci=0;ci<2;ci++) for(let ri=0;ri<3;ri++){
+  const x=ci?1.8:-1.8, z=[2.2,0.2,-1.9][ri];
+  box(steelM, 1.3,0.04,0.16, x,3.16,z);
+  const tube=box(new THREE.MeshBasicMaterial({color:0xdfeeff}), 1.2,0.035,0.05, x,3.13,z);
+  const li=new THREE.PointLight(0xcfe4f2, 2.1, 8.5, 1.8); li.position.set(x,2.9,z); scene.add(li);
+  tubes.push({tube, li, row: ri===0?0:ri===1?1:2, base:2.1});
+}
+scene.add(new THREE.AmbientLight(0x2c3438, 1.6));
+
+// ===== 老师的影子(黑板边,灭灯后才在) =====
+const figCv=document.createElement("canvas"); figCv.width=128; figCv.height=384;
+{ const x=figCv.getContext("2d"); x.clearRect(0,0,128,384);
+  x.fillStyle="rgba(4,6,8,0.96)";
+  x.beginPath(); x.ellipse(64,52,20,26,0,0,7); x.fill();               // 头(略小,比例不对)
+  x.beginPath(); x.moveTo(46,74); x.quadraticCurveTo(30,180,40,384);   // 身体(过长)
+  x.lineTo(92,384); x.quadraticCurveTo(100,180,82,74); x.closePath(); x.fill();
+  x.strokeStyle="rgba(4,6,8,0.96)"; x.lineWidth=10; x.lineCap="round";
+  x.beginPath(); x.moveTo(92,110); x.lineTo(112,270); x.stroke();      // 垂着的长手臂
+  x.lineWidth=4; x.beginPath(); x.moveTo(112,270); x.lineTo(118,330); x.stroke();  // 手里垂着的尺
+}
+const figTex=new THREE.CanvasTexture(figCv);
+const figMat=new THREE.MeshBasicMaterial({ map:figTex, transparent:true, opacity:0, depthWrite:false });
+const figure=new THREE.Mesh(new THREE.PlaneGeometry(0.85,2.55), figMat);
+figure.position.set(-1.1,1.28,-2.95); figure.visible=false; scene.add(figure);
+
+// ===== 声音(全程序化) =====
+let AC=null, buzzG=null, heartG=null, staticG=null;
+function au(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function noiseSrc(dur){ const a=au(); if(!a) return null;
+  const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=a.createBufferSource(); s.buffer=b; return s; }
+function startBuzz(){ const a=au(); if(!a||buzzG) return;               // 日光灯嗡嗡
+  const o=a.createOscillator(); o.type="sawtooth"; o.frequency.value=100;
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=420;
+  buzzG=a.createGain(); buzzG.gain.value=0.016;
+  o.connect(f).connect(buzzG).connect(a.destination); o.start(); }
+function bell(){ const a=au(); if(!a) return;                           // 走了调的电铃
+  const o=a.createOscillator(); o.type="square"; o.frequency.setValueAtTime(485,a.currentTime);
+  o.frequency.linearRampToValueAtTime(430,a.currentTime+2.4);
+  const trem=a.createOscillator(); trem.frequency.value=16;
+  const tg=a.createGain(); tg.gain.value=0.5; trem.connect(tg);
+  const g=a.createGain(); g.gain.value=0.028; tg.connect(g.gain);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=1400;
+  o.connect(f).connect(g).connect(a.destination); o.start(); trem.start();
+  g.gain.setValueAtTime(0.028,a.currentTime+1.9); g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+2.6);
+  o.stop(a.currentTime+2.7); trem.stop(a.currentTime+2.7); }
+function crackle(){ const a=au(); if(!a) return;                        // 广播喀啦
+  const s=noiseSrc(0.5); const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1900; f.Q.value=1.2;
+  const g=a.createGain(); g.gain.setValueAtTime(0.12,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.45);
+  s.connect(f).connect(g).connect(a.destination); s.start();
+  const o=a.createOscillator(); o.type="sine"; o.frequency.value=880;   // 拿起话筒的迪——
+  const g2=a.createGain(); g2.gain.setValueAtTime(0.0001,a.currentTime+0.5);
+  g2.gain.linearRampToValueAtTime(0.045,a.currentTime+0.7); g2.gain.exponentialRampToValueAtTime(0.001,a.currentTime+1.6);
+  o.connect(g2).connect(a.destination); o.start(a.currentTime+0.5); o.stop(a.currentTime+1.7); }
+function scratch(){ const a=au(); if(!a) return;                        // 粉笔写字
+  const s=noiseSrc(0.22); const f=a.createBiquadFilter(); f.type="bandpass";
+  f.frequency.value=3200+Math.random()*1200; f.Q.value=2.5;
+  const g=a.createGain(); g.gain.setValueAtTime(0.09,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.2);
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+function sting(){ const a=au(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain(); o.type="sawtooth";
+  o.frequency.setValueAtTime(700,a.currentTime); o.frequency.exponentialRampToValueAtTime(60,a.currentTime+0.8);
+  g.gain.setValueAtTime(0.22,a.currentTime); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.85);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+0.9); }
+function thud(){ const a=au(); if(!a) return; const s=noiseSrc(0.5);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=90;
+  const g=a.createGain(); g.gain.setValueAtTime(1.6,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.45);
+  s.connect(f).connect(g).connect(a.destination); s.start(); }
+function creak(dur=1.1, f0=180, f1=90){ const a=au(); if(!a) return;
+  const o=a.createOscillator(); o.type="sawtooth";
+  o.frequency.setValueAtTime(f0,a.currentTime); o.frequency.linearRampToValueAtTime(f1,a.currentTime+dur);
+  const g=a.createGain(); g.gain.setValueAtTime(0.0001,a.currentTime);
+  g.gain.linearRampToValueAtTime(0.05,a.currentTime+0.12);
+  g.gain.setValueAtTime(0.045,a.currentTime+dur-0.25); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
+  const flt=a.createBiquadFilter(); flt.type="lowpass"; flt.frequency.value=800;
+  o.connect(flt).connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.05); }
+function rulerClatter(){ const a=au(); if(!a) return;                   // 戒尺落地弹跳
+  let t=a.currentTime;
+  for(const [dt,vol] of [[0,0.5],[0.22,0.32],[0.38,0.2],[0.5,0.12],[0.58,0.07]]){
+    const s=noiseSrc(0.08); const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1400; f.Q.value=1.5;
+    const g=a.createGain(); g.gain.setValueAtTime(vol,t+dt); g.gain.exponentialRampToValueAtTime(0.001,t+dt+0.07);
+    s.connect(f).connect(g).connect(a.destination); s.start(t+dt); } }
+function setHeart(on){ const a=au(); if(!a) return;
+  if(on && !heartG){ heartG={stop:false};
+    const beat=()=>{ if(heartG.stop) return;
+      for(const [dt,vol] of [[0,0.5],[0.16,0.3]]){
+        const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.value=48;
+        g.gain.setValueAtTime(0.0001,a.currentTime+dt); g.gain.linearRampToValueAtTime(vol,a.currentTime+dt+0.03);
+        g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dt+0.22);
+        o.connect(g).connect(a.destination); o.start(a.currentTime+dt); o.stop(a.currentTime+dt+0.3); }
+      heartG.t=setTimeout(beat, 860); };
+    beat(); }
+  if(!on && heartG){ heartG.stop=true; clearTimeout(heartG.t); heartG=null; } }
+let stepAcc=0;
+function foot(){ const a=au(); if(!a) return; const s=noiseSrc(0.12);
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=300+Math.random()*140;
+  const g=a.createGain(); g.gain.setValueAtTime(0.14,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.1);
+  s.connect(f).connect(g).connect(a.destination); s.start();
+  if(Math.random()<0.1) creak(0.7, 220, 140); }
+
+// ===== 控制 =====
+let yaw=0.47, pitch=0; const keys={};   // 进门看向教室纵深(黑板方向)
+const euler=new THREE.Euler(0,0,0,"YXZ");
+function applyLook(){ euler.set(pitch,yaw,0); camera.quaternion.setFromEuler(euler); } applyLook();
+addEventListener("keydown", e=>{ const k=e.key.toLowerCase();
+  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){keys[k]=true;e.preventDefault();}
+  if(k==="e"||k==="enter") act(); });
+addEventListener("keyup", e=>keys[e.key.toLowerCase()]=false);
+const SENS=0.0022;
+canvas.addEventListener("click", ()=>{ if(started && !document.pointerLockElement && !QA.get("qa")) canvas.requestPointerLock(); });
+addEventListener("mousemove", e=>{ if(document.pointerLockElement===canvas){ yaw-=e.movementX*SENS; pitch-=e.movementY*SENS;
+  pitch=Math.max(-1.3,Math.min(1.3,pitch)); applyLook(); } });
+let padActive=false, padVec={x:0,y:0}, look={id:null,x:0,y:0};
+const pad=$("#pad"), stick=pad.querySelector("i");
+pad.addEventListener("pointerdown", e=>{padActive=true;padMove(e);pad.setPointerCapture(e.pointerId);});
+pad.addEventListener("pointermove", e=>{if(padActive)padMove(e);});
+pad.addEventListener("pointerup", ()=>{padActive=false;padVec={x:0,y:0};stick.style.transform="translate(0,0)";});
+function padMove(e){ const r=pad.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  const m=Math.hypot(dx,dy),mx=r.width/2-8; if(m>mx){dx*=mx/m;dy*=mx/m;} padVec={x:dx/mx,y:dy/mx}; stick.style.transform=`translate(${dx}px,${dy}px)`; }
+canvas.addEventListener("touchstart", e=>{const t=e.changedTouches[0]; if(t.clientX>innerWidth*0.4)look={id:t.identifier,x:t.clientX,y:t.clientY};},{passive:true});
+canvas.addEventListener("touchmove", e=>{for(const t of e.changedTouches){if(t.identifier===look.id){yaw-=(t.clientX-look.x)*0.005;pitch-=(t.clientY-look.y)*0.005;pitch=Math.max(-1.3,Math.min(1.3,pitch));look.x=t.clientX;look.y=t.clientY;applyLook();}}},{passive:true});
+canvas.addEventListener("touchend", e=>{for(const t of e.changedTouches)if(t.identifier===look.id)look.id=null;},{passive:true});
+$("#eBtn").addEventListener("pointerdown", e=>{e.preventDefault();act();});
+
+function walkable(x,z){
+  if(x<-3.95||x>3.95||z<-3.15||z>3.15) return false;
+  for(const s of solids){
+    if(s.rect){ if(x>s.x0-0.05&&x<s.x1+0.05&&z>s.z0-0.05&&z<s.z1+0.05) return false; }
+    else if(Math.hypot(x-s.x,z-s.z)<s.r+0.05) return false;
+  }
+  return true;
+}
+
+let capTimer=null;
+function caption(text, ms){
+  const el=$("#cap"); el.textContent=text; el.classList.add("show");
+  clearTimeout(capTimer); capTimer=setTimeout(()=>el.classList.remove("show"), ms||3600);
+}
+
+// ===== 事件链 =====
+// EVT: 0进入 → 2点名册 → 3黑板写字 → 4开课桌+灭灯+影子 → 5影子消失+卷子可翻
+let EVT=0;
+let rosterDone=false, boardDone=false, boardWriting=false, deskOpened=false, figureGone=false;
+let lightsOut=false, blackRows=0;
+const promptEl=$("#prompt");
+const fwd=new THREE.Vector3(), toV=new THREE.Vector3();
+function nearFacing(target, maxD, minFace){
+  camera.getWorldDirection(fwd);
+  const d=camera.position.distanceTo(target); if(d>maxD) return false;
+  toV.copy(target).sub(camera.position).normalize();
+  return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
+}
+let hot=null;
+function updatePrompt(){
+  hot=null;
+  if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
+  if(nearFacing(ROSTER,1.5)&&!rosterDone) hot={id:"roster", tip:"按 E 翻开点名册"};
+  else if(EVT>=3&&!deskOpened&&nearFacing(MYDESK,1.4)) hot={id:"desk", tip:"按 E 打开课桌"};
+  else if(EVT>=5&&deskOpened&&nearFacing(MYDESK,1.4)) hot={id:"paper", tip:"按 E 把卷子翻过来"};
+  else if(deskOpened&&EVT<5&&nearFacing(MYDESK,1.4)) hot={id:"paper0", tip:"按 E 看看卷子"};
+  if(hot){ promptEl.textContent=hot.tip; promptEl.classList.add("show"); }
+  else promptEl.classList.remove("show");
+}
+function act(){
+  if(frozen||!hot) return;
+  if(hot.id==="roster"){
+    rosterDone=true; creak(0.6, 300, 200);
+    caption("点名册上，所有名字都被红笔划掉了。", 3600);
+    setTimeout(()=>{ caption("只有一行没划——没有名字，只有编号：7931。", 4200); EVT=Math.max(EVT,2); }, 3800);
+    setTimeout(()=>{ crackle(); caption("广播喀啦响了一声。像有人拿起话筒，又轻轻放下。", 4200); }, 8400);
+  }
+  if(hot.id==="desk"){
+    deskOpened=true; creak(0.8, 260, 150);
+    let v=0; const open=()=>{ v+=0.06; myLid.rotation.x=-Math.min(1,v)*1.15;
+      if(v<1) requestAnimationFrame(open); else { paper.visible=true; } }; open();
+    setTimeout(()=>{ caption("课桌里有一张卷子。红笔零分，批注只有一句——「这么简单都不会」。", 4600); }, 900);
+    setTimeout(()=>{ startLightsOut(); }, 5400);
+  }
+  if(hot.id==="paper0"){ caption("你不想碰它。手心在发烫。", 3200); }
+  if(hot.id==="paper"){ openMemory(); }
+}
+// 黑板自己写字
+const BOARD_TEXT="把 手 伸 出 来";
+function writeBoard(){
+  if(boardWriting||boardDone) return; boardWriting=true;
+  const chars=BOARD_TEXT.split(" ");
+  let i=0;
+  const step=()=>{
+    if(i>=chars.length){ boardDone=true; EVT=Math.max(EVT,3); sting();
+      caption("粉笔灰簌簌往下掉。讲台上没有人。", 4600); return; }
+    scratch();
+    cx2d.font="bold 92px 'PingFang SC','Microsoft YaHei',sans-serif";
+    cx2d.fillStyle="rgba(226,232,226,0.88)";
+    cx2d.save(); cx2d.translate(120+i*118, 168+(i%2?8:-6)); cx2d.rotate((Math.random()-0.5)*0.1);
+    cx2d.fillText(chars[i],0,0); cx2d.restore();
+    chalkTex.needsUpdate=true;
+    i++; setTimeout(step, 460+Math.random()*260);
+  };
+  caption("黑板上，有字自己浮出来。", 3000);
+  setTimeout(step, 800);
+}
+// 一排排灭灯(从后排到讲台)
+function startLightsOut(){
+  if(lightsOut) return; lightsOut=true;
+  const rows=[0,1,2];   // 后→中→前
+  let ri=0;
+  const next=()=>{
+    if(ri>=rows.length){
+      setHeart(true); figMat.opacity=0.92; figure.visible=true;
+      setTimeout(()=>{ sting(); caption("讲台边，站着一个很高很高的影子。", 4600); EVT=Math.max(EVT,4); }, 700);
+      return; }
+    thud();
+    for(const t of tubes) if(t.row===rows[ri]){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
+    if(ri===0) caption("最后一排的灯，灭了。", 2600);
+    ri++; setTimeout(next, 950);
+  };
+  next();
+}
+// 影子被走近 → 消失
+function figureVanish(){
+  figureGone=true; figure.visible=false;
+  sting(); rulerClatter(); ruler.visible=true;
+  setTimeout(()=>{ setHeart(false);
+    for(const t of tubes){ t.li.intensity=0.75; t.tube.material.color.setHex(0x7d8993); }   // 半亮,病恹恹
+    caption("影子没有了。地上躺着一把戒尺。", 4200);
+    setTimeout(()=>{ paperGlow.intensity=1.1; caption("你课桌上的卷子，自己翻回了正面。", 4200); EVT=Math.max(EVT,5); }, 4600);
+  }, 1400);
+}
+
+// ===== 碎片闪回 =====
+const MEMORY = "教室很冷。你站在讲台边，手心朝上。\n戒尺落下来的时候你没有哭——哭，会挨得更多。\n「这么简单都不会。你怎么这么笨。」\n哄笑声里，你盯着地上的粉笔灰，数了很久很久。\n\n卷子背面，印着一行很小的字：\n「样本 7931 · 恐惧 · 教室 —— 已录入」。\n连你最想忘掉的，他们也要拿走。\n从今往后，怕，也不是你自己的了。";
+let boxOpened=false;
+function openMemory(){
+  if(boxOpened) return; boxOpened=true; frozen=true;
+  if(document.pointerLockElement) document.exitPointerLock();
+  const fEl=$("#flash"); fEl.classList.add("show");
+  const ft=$("#flashText"); ft.textContent="";
+  let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
+    if(i>=MEMORY.length){ clearInterval(timer); setTimeout(()=>$("#flashBack").classList.add("show"),500); } }, 42);
+}
+$("#flashBack").addEventListener("click", ()=>{
+  try{ const c=JSON.parse(localStorage.getItem("mf3d_cleared")||"[]");
+    if(!c.includes("cold")){ c.push("cold"); localStorage.setItem("mf3d_cleared", JSON.stringify(c)); } }catch(e){}
+  location.href="corridor3d.html";
+});
+
+// ===== 导演 =====
+let bellDone=false;
+function director(dt){
+  // 进屋 → 后门自己合上
+  if(started && !doorClosed && doorT<1){
+    doorT=Math.min(1, doorT+dt*0.22);
+    backDoor.position.x = 2.0 + doorT*0.95;
+    if(doorT>=1){ doorClosed=true; thud(); caption("后门，在你身后合上了。", 3400); }
+  }
+  // 点名册翻过之后,看向黑板 → 字自己浮出来
+  if(EVT>=2 && !boardDone && !boardWriting && nearFacing(BOARD, 4.2, 0.42)) writeBoard();
+  // 影子:始终侧对着你;走近 → 消失
+  if(EVT>=4 && !figureGone && figure.visible){
+    figure.lookAt(camera.position.x, figure.position.y, camera.position.z);
+    figure.position.y = 1.28 + Math.sin(tGlobal*0.9)*0.01;
+    if(camera.position.distanceTo(figure.position)<2.3) figureVanish();
+  }
+}
+
+// ===== 主循环 =====
+const clock=new THREE.Clock(); const SPEED=2.1, up=new THREE.Vector3(0,1,0);
+const mv=new THREE.Vector3(), right=new THREE.Vector3();
+let started=false, frozen=true, tGlobal=0;
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.05, clock.getDelta()); tGlobal+=dt;
+  if(started && !frozen && !$("#flash").classList.contains("show")){
+    camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize(); right.crossVectors(fwd,up).normalize();
+    mv.set(0,0,0);
+    if(keys["w"]||keys["arrowup"])mv.add(fwd); if(keys["s"]||keys["arrowdown"])mv.sub(fwd);
+    if(keys["d"]||keys["arrowright"])mv.add(right); if(keys["a"]||keys["arrowleft"])mv.sub(right);
+    if(padActive){ mv.addScaledVector(fwd,-padVec.y); mv.addScaledVector(right,padVec.x); }
+    if(mv.lengthSq()>0.0001){
+      mv.normalize().multiplyScalar(SPEED*dt);
+      const nx=camera.position.x+mv.x, nz=camera.position.z+mv.z;
+      if(walkable(nx,camera.position.z)) camera.position.x=nx;
+      if(walkable(camera.position.x,nz)) camera.position.z=nz;
+      stepAcc+=Math.hypot(mv.x,mv.z);
+      if(stepAcc>0.62){ stepAcc=0; foot(); }
+    }
+    director(dt);
+  }
+  camera.position.y=1.55;
+  // 日光灯频闪:EVT越深闪得越狠;有一根(后排右)一直病态地闪
+  if(!lightsOut){
+    for(let i=0;i<tubes.length;i++){ const t=tubes[i];
+      let v=t.base;
+      if(i===1) v *= (Math.random()<0.22 ? 0.15 : 0.85+Math.random()*0.15);      // 坏灯管
+      else if(Math.random() < 0.015+EVT*0.012) v *= 0.3+Math.random()*0.4;
+      t.li.intensity=v;
+      t.tube.material.color.setHex(v<t.base*0.5 ? 0x2a3138 : 0xdfeeff);
+    }
+  }
+  if(EVT>=4 && !figureGone) deskLamp.intensity = 0.9*(Math.random()<0.06 ? 0.4 : 1);
+  updatePrompt();
+  composer.render();
+}
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),0.34,0.55,0.9);
+composer.addPass(bloom); composer.addPass(new OutputPass());
+function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); }
+addEventListener("resize", resize); resize(); frame();
+
+manager.onLoad=()=>{ const b=$("#goBtn"); b.disabled=false; b.textContent="走 进 教 室";
+  $("#gateHint").textContent="点击进入 · 你的座位还空着"; };
+setTimeout(()=>{ const b=$("#goBtn"); if(b.disabled){ b.disabled=false; b.textContent="走 进 教 室"; } }, 6000);
+$("#goBtn").addEventListener("click", ()=>{ if($("#goBtn").disabled)return;
+  started=true; frozen=false; startBuzz();
+  $("#gate").classList.add("gone"); $("#cross").style.opacity="1";
+  if(!("ontouchstart" in window) && !QA.get("qa")) canvas.requestPointerLock();
+  if(!bellDone){ bellDone=true; bell(); }
+  caption("晚自习早就结束了。可你还坐过这里。", 4200);
+});
+
+// ===== QA 钩子 =====
+if(QA.get("qa")){
+  $("#gate").classList.add("gone"); started=true; frozen=false; startBuzz=()=>{}; bellDone=true;
+  if(QA.get("px")) camera.position.x=parseFloat(QA.get("px"));
+  if(QA.get("pz")) camera.position.z=parseFloat(QA.get("pz"));
+  if(QA.get("yaw")) yaw=parseFloat(QA.get("yaw"));
+  if(QA.get("pitch")) pitch=parseFloat(QA.get("pitch"));
+  applyLook();
+  const e=parseInt(QA.get("evt")||"0");
+  if(e>=2){ rosterDone=true; EVT=2; }
+  if(e>=3){ boardDone=true; EVT=3; }
+  if(e>=4){ deskOpened=true; myLid.rotation.x=-1.15; paper.visible=true; lightsOut=true;
+    for(const t of tubes){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
+    figMat.opacity=0.92; figure.visible=true; EVT=4; }
+  if(e>=5){ figureGone=true; figure.visible=false; ruler.visible=true;
+    for(const t of tubes){ t.li.intensity=0.75; t.tube.material.color.setHex(0x7d8993); }
+    paperGlow.intensity=1.1; EVT=5; }
+  doorT=1; doorClosed=true; backDoor.position.x=2.95;
+}
+window.__room={ scene, camera, renderer, get EVT(){return EVT;}, set EVT(v){EVT=v;},
+  set yaw(v){yaw=v;applyLook();}, set pitch(v){pitch=v;applyLook();},
+  figure, solids, walkable, tubes, get hot(){return hot;}, act };
+</script>
+</body>
+</html>
