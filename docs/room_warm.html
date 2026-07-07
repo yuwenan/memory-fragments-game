@@ -147,8 +147,9 @@ function pbr(name, repX, repY, tint){
 const wallMat  = pbr("wall", 4.5, 1.6, 0xe0d3b4);      // 再亮一档:家里灯全开的正常亮度
 const floorMat = pbr("floor", 4, 4, 0xc4a98a);
 const ceilMat  = pbr("wall", 3, 3, 0xa89c88);
-const tileMat  = pbr("tile", 2.4, 2.4, 0x6d7676);
-const tileFloorMat = pbr("tile", 2, 2, 0x67706f);
+// 瓷砖:密铺小砖+柔和米灰(原来2.4大格黑白像测试贴图),不再是大棋盘
+const tileMat  = pbr("tile", 6, 5, 0xb8bab0);
+const tileFloorMat = pbr("tile", 5, 4, 0x9ea19a);
 const woodDark = new THREE.MeshStandardMaterial({ color:0x4a3524, roughness:.62, metalness:.06 });
 const trimMat  = new THREE.MeshStandardMaterial({ color:0x8a7a5e, roughness:.6 });
 
@@ -480,9 +481,10 @@ loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
 loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
-loadModel("wooden_table_02",       { x:3.7, z:-0.1, rotY: 0.3, solidR:0.75 });
-loadModel("painted_wooden_chair_01",{ x:3.1, z:-0.75, rotY: 0.5, solidR:0.28 });
-loadModel("painted_wooden_chair_01",{ x:4.3, z:0.45, rotY: -2.4, solidR:0.28 });
+// 餐桌椅:摆正(原来table斜0.3+两椅乱角度乱位),桌居中,两椅贴长边对坐
+loadModel("wooden_table_02",       { x:3.6, z:-0.1, rotY: 0, solidR:0.75 });
+loadModel("painted_wooden_chair_01",{ x:2.85, z:-0.1, rotY: Math.PI/2, solidR:0.26 });   // 西侧,面朝桌
+loadModel("painted_wooden_chair_01",{ x:4.35, z:-0.1, rotY: -Math.PI/2, solidR:0.26 });  // 东侧,面朝桌
 // 柜门共用材质(电视柜/厨房柜共用)
 const cabDoorM = new THREE.MeshStandardMaterial({ color:0x5c4230, roughness:.55 });
 const cabPanelM= new THREE.MeshStandardMaterial({ color:0x46301f, roughness:.62 });
@@ -498,11 +500,12 @@ solids.push({rect:true, x0:1.5, x1:2.0, z0:0.6, z1:1.8});
 let tvScreen=null;
 loadModel("Television_01", { x:1.75, z:1.2, y:0.42, rotY: -Math.PI/2, onload(o){
   const b=new THREE.Box3().setFromObject(o);
-  const w=(b.max.z-b.min.z)*0.62, h=(b.max.y-b.min.y)*0.55;
+  const w=(b.max.z-b.min.z)*0.5, h=(b.max.y-b.min.y)*0.42;   // 缩小到屏幕框内
   tvScreen = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
     new THREE.MeshBasicMaterial({ map:staticTex, color:0x000000 }));
   tvScreen.rotation.y = -Math.PI/2;
-  tvScreen.position.set(b.min.x-0.005, (b.min.y+b.max.y)/2+0.03, (b.min.z+b.max.z)/2);
+  // 嵌进屏幕面(原来贴在最前的机壳外沿,飘在电视前面);往机身里挪一点
+  tvScreen.position.set(b.min.x+0.035, (b.min.y+b.max.y)/2+0.02, (b.min.z+b.max.z)/2);
   scene.add(tvScreen);
 }});
 // 地毯
@@ -520,9 +523,11 @@ const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
 const topM = new THREE.MeshStandardMaterial({ color:0xb9ac96, roughness:.35 });
 const steelM = new THREE.MeshStandardMaterial({ color:0xaab2b8, roughness:.35, metalness:.5 });   // 场景没环境贴图,金属度太高反射不到东西会发黑
 // 橱柜门:柜体+门芯凹板+把手(不再是光板盒子);柜门朝屋里(-X面,东墙x=5.45)
-function eastCabinet(zc, zw, yc, h, depth, nDoors){
+// cTop:柜体顶高(默认=h);水槽下柜要压低,否则实心柜体填满嵌进去的水盆
+function eastCabinet(zc, zw, yc, h, depth, nDoors, cTop){
   const xWall=5.45, xFront=xWall-depth;
-  box(cabM, depth, h, zw, xWall-depth/2, yc, zc);                          // 柜体
+  const ch=cTop||h, cyc=cTop? cTop/2 : yc;
+  box(cabM, depth, ch, zw, xWall-depth/2, cyc, zc);                        // 柜体
   const dw=zw/nDoors;
   for(let i=0;i<nDoors;i++){
     const dz=zc - zw/2 + dw*(i+0.5);
@@ -533,8 +538,9 @@ function eastCabinet(zc, zw, yc, h, depth, nDoors){
     handle.position.set(xFront-0.045, yc, hz); scene.add(handle);
   }
 }
-// 下柜(灶台z[-0.12,0.62]留空)
-eastCabinet(-1.11, 1.98, 0.44, 0.88, 0.62, 3);
+// 下柜:左段(灶台z[-0.12,0.62]留空)+水槽下柜(柜体压低到0.56给水盆让位)
+eastCabinet(-1.41, 1.38, 0.44, 0.88, 0.62, 2);
+eastCabinet(-0.42, 0.60, 0.44, 0.88, 0.62, 1, 0.56);
 eastCabinet(0.76, 0.28, 0.44, 0.88, 0.62, 1);
 box(topM, 0.68, 0.045, 0.28, 5.12, 0.9, 0.76);
 // 台面:主段在水槽处真开洞(z[-0.72,-0.28]),拆成左段+右段+前后窄边,水盆嵌进洞里
@@ -545,16 +551,16 @@ box(topM, 0.14, 0.045, 0.44, 4.85, 0.9, -0.5);    // 靠屋窄边
 // 上柜(浅进深挂柜,带底板不再露黑洞)
 eastCabinet(-1.55, 1.0, 2.0, 0.72, 0.32, 2);
 eastCabinet(-0.35, 0.7, 2.0, 0.72, 0.32, 1);
-// 水槽:不锈钢下沉盆(嵌进台面洞里,盆壁+盆底+落水口都在)
+// 水槽:不锈钢下沉盆(嵌进台面洞里,盆深到0.70,柜体已压低不再挡)
 { const basinM = new THREE.MeshStandardMaterial({color:0x9299a0, roughness:.28, metalness:.5});
-  box(basinM, 0.40, 0.02, 0.44, 5.12, 0.775, -0.5);          // 盆底
-  box(basinM, 0.02, 0.16, 0.44, 5.31, 0.855, -0.5);          // 盆壁×4
-  box(basinM, 0.02, 0.16, 0.44, 4.93, 0.855, -0.5);
-  box(basinM, 0.40, 0.16, 0.02, 5.12, 0.855, -0.71);
-  box(basinM, 0.40, 0.16, 0.02, 5.12, 0.855, -0.29);
+  box(basinM, 0.40, 0.02, 0.44, 5.12, 0.70, -0.5);           // 盆底
+  box(basinM, 0.02, 0.23, 0.44, 5.31, 0.815, -0.5);          // 盆壁×4
+  box(basinM, 0.02, 0.23, 0.44, 4.93, 0.815, -0.5);
+  box(basinM, 0.40, 0.23, 0.02, 5.12, 0.815, -0.71);
+  box(basinM, 0.40, 0.23, 0.02, 5.12, 0.815, -0.29);
   const drain=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.006,14),
     new THREE.MeshStandardMaterial({color:0x3a3f44, roughness:.4, metalness:.5}));
-  drain.position.set(5.12,0.787,-0.5); scene.add(drain);
+  drain.position.set(5.12,0.712,-0.5); scene.add(drain);
   const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.26,10), steelM);
   tap.position.set(5.33,1.05,-0.5); scene.add(tap);
   const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.2,10), steelM);
@@ -626,17 +632,34 @@ const toiletG = new THREE.Group(); toiletG.position.set(-2.05,0,-7.9); toiletG.r
 solids.push({x:-2.05, z:-7.9, r:0.34});
 const TOILET = new THREE.Vector3(-2.05,0.5,-7.9);
 const sinkG = new THREE.Group(); sinkG.position.set(-0.6,0,-8.2); scene.add(sinkG);
-{ const basin=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.09,0.4), ceramic); basin.position.y=0.82; sinkG.add(basin);
-  const ped=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.8,12), ceramic); ped.position.y=0.4; sinkG.add(ped);
-  const tap=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.12,0.04), steelM); tap.position.set(0,0.93,-0.14); sinkG.add(tap); }
+{ // 洗手台:圆润台盆(带下凹碗)+立柱+龙头(原来是平板一块)
+  const basin=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.2,0.13,20), ceramic); basin.position.y=0.85; sinkG.add(basin);
+  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.11,0.1,20), new THREE.MeshStandardMaterial({color:0xcfd4d1, roughness:.25}));
+  bowl.position.y=0.885; sinkG.add(bowl);
+  const ped=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.1,0.78,14), ceramic); ped.position.y=0.39; sinkG.add(ped);
+  const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.16,10), steelM); tap.position.set(0,0.98,-0.16); sinkG.add(tap);
+  const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.1,10), steelM);
+  spout.rotation.x=Math.PI/2.6; spout.position.set(0,1.04,-0.12); sinkG.add(spout); }
 solids.push({x:-0.6, z:-8.2, r:0.32});
 const mirror = new Reflector(new THREE.PlaneGeometry(0.5,0.66), {
   textureWidth:256, textureHeight:256, color:0x889096 });
 mirror.position.set(-0.6,1.52,-8.39); scene.add(mirror);
 box(new THREE.MeshStandardMaterial({color:0x2a2d30, roughness:.5}), 0.56,0.72,0.03, -0.6,1.52,-8.42);
 const MIRROR = new THREE.Vector3(-0.6,1.4,-8.39);
-// 浴缸(贴西墙)
-box(ceramic, 0.72, 0.5, 1.5, -2.05, 0.25, -6.85);
+// 浴缸(贴西墙):外壳+挖出内胆(原来是实心白盒子)
+{ const bx=-2.05, bz=-6.85, bw=0.72, bl=1.5, bh=0.5, wall=0.08;
+  const outerM=ceramic, innerM=new THREE.MeshStandardMaterial({color:0xd2d7d3, roughness:.2});
+  box(outerM, bw, wall, bl, bx, 0.04, bz);                       // 缸底
+  box(outerM, wall, bh, bl, bx-bw/2+wall/2, 0.25, bz);           // 四壁(外露那几面)
+  box(outerM, wall, bh, bl, bx+bw/2-wall/2, 0.25, bz);
+  box(outerM, bw, bh, wall, bx, 0.25, bz-bl/2+wall/2);
+  box(outerM, bw, bh, wall, bx, 0.25, bz+bl/2-wall/2);
+  box(innerM, bw-wall*2, 0.02, bl-wall*2, bx, 0.11, bz);         // 内胆底
+  // 缸壁上沿一圈(压边)
+  for(const [sx,sw,sz,sl] of [[bx-bw/2+0.02,0.05,bz,bl],[bx+bw/2-0.02,0.05,bz,bl],[bx,bw,bz-bl/2+0.02,0.05],[bx,bw,bz+bl/2-0.02,0.05]])
+    box(outerM, sw,0.03,sl, sx,0.505,sz);
+  const faucet=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,0.14,10), steelM);
+  faucet.position.set(bx,0.56,bz+bl/2-0.12); scene.add(faucet); }
 solids.push({rect:true, x0:-2.45, x1:-1.65, z0:-7.65, z1:-6.1});
 
 // ===== 卫生间门(自己吱呀开) =====
@@ -965,13 +988,13 @@ function nearFacing(target, maxD, minFace){
   toV.copy(target).sub(camera.position).normalize();
   return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
 }
-const SOFA=new THREE.Vector3(-3.0,0.8,0.9);
+const SOFA=new THREE.Vector3(-2.7,0.7,0.9);   // 坐点挪到座面前沿+半径放宽,茶几外也够得着
 const TV=new THREE.Vector3(1.75,1.0,1.2);
 let hot=null;
 function updatePrompt(){
   hot=null;
   if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
-  if(nearFacing(SOFA,1.8)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
+  if(nearFacing(SOFA,2.6)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
   else if(nearFacing(SINK,1.4)&&!sinkDone) hot={id:"sink", tip:"按 E 检查水槽"};
   else if(nearFacing(FRIDGE,1.5)&&!fridgeDone) hot={id:"fridge", tip:"按 E 打开冰箱"};
   else if(entryClosed&&nearFacing(ENTRYDOOR,1.6)) hot={id:"entry", tip:"按 E 开门"};
