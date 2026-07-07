@@ -533,20 +533,31 @@ function eastCabinet(zc, zw, yc, h, depth, nDoors){
     handle.position.set(xFront-0.045, yc, hz); scene.add(handle);
   }
 }
-// 下柜(灶台z[-0.12,0.62]留空)+台面
+// 下柜(灶台z[-0.12,0.62]留空)
 eastCabinet(-1.11, 1.98, 0.44, 0.88, 0.62, 3);
-box(topM, 0.68, 0.045, 1.98, 5.12, 0.9, -1.11);
 eastCabinet(0.76, 0.28, 0.44, 0.88, 0.62, 1);
 box(topM, 0.68, 0.045, 0.28, 5.12, 0.9, 0.76);
+// 台面:主段在水槽处真开洞(z[-0.72,-0.28]),拆成左段+右段+前后窄边,水盆嵌进洞里
+box(topM, 0.68, 0.045, 1.38, 5.12, 0.9, -1.41);   // 左段
+box(topM, 0.68, 0.045, 0.16, 5.12, 0.9, -0.20);   // 右段
+box(topM, 0.14, 0.045, 0.44, 5.39, 0.9, -0.5);    // 靠墙窄边
+box(topM, 0.14, 0.045, 0.44, 4.85, 0.9, -0.5);    // 靠屋窄边
 // 上柜(浅进深挂柜,带底板不再露黑洞)
 eastCabinet(-1.55, 1.0, 2.0, 0.72, 0.32, 2);
 eastCabinet(-0.35, 0.7, 2.0, 0.72, 0.32, 1);
-// 水槽:窄边框+下沉盆体(原来是一整块凸出台面的深色金属板,读不出是水槽)
-box(new THREE.MeshStandardMaterial({color:0xb4bac0, roughness:.35, metalness:.3}), 0.46, 0.02, 0.52, 5.10, 0.912, -0.5);
-box(new THREE.MeshStandardMaterial({color:0x565c62, roughness:.45, metalness:.25}), 0.38, 0.05, 0.44, 5.10, 0.885, -0.5);
-{ const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.26,8), steelM);
+// 水槽:不锈钢下沉盆(嵌进台面洞里,盆壁+盆底+落水口都在)
+{ const basinM = new THREE.MeshStandardMaterial({color:0x9299a0, roughness:.28, metalness:.5});
+  box(basinM, 0.40, 0.02, 0.44, 5.12, 0.775, -0.5);          // 盆底
+  box(basinM, 0.02, 0.16, 0.44, 5.31, 0.855, -0.5);          // 盆壁×4
+  box(basinM, 0.02, 0.16, 0.44, 4.93, 0.855, -0.5);
+  box(basinM, 0.40, 0.16, 0.02, 5.12, 0.855, -0.71);
+  box(basinM, 0.40, 0.16, 0.02, 5.12, 0.855, -0.29);
+  const drain=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.006,14),
+    new THREE.MeshStandardMaterial({color:0x3a3f44, roughness:.4, metalness:.5}));
+  drain.position.set(5.12,0.787,-0.5); scene.add(drain);
+  const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.26,10), steelM);
   tap.position.set(5.33,1.05,-0.5); scene.add(tap);
-  const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.2,8), steelM);
+  const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.2,10), steelM);
   spout.rotation.z=Math.PI/2; spout.position.set(5.24,1.17,-0.5); scene.add(spout); }
 // 电灶:真模型(Poly Haven electric_stove),搪瓷锅坐灶面(妈妈说"饭在锅里")
 loadModel("electric_stove", { x:5.12, z:0.25, rotY:-Math.PI/2, onload(o){
