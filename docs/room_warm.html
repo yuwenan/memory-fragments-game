@@ -63,6 +63,17 @@
     border:1px solid rgba(220,185,120,.4);background:rgba(40,30,16,.5);color:#f0dcab;font-size:20px;
     display:none;align-items:center;justify-content:center;touch-action:none;}
   @media (pointer:coarse){#pad{display:block;}#eBtn{display:flex;}}
+  /* 看清挂画:按E放大查看 */
+  #pv{position:fixed;inset:0;z-index:31;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:22px;background:rgba(0,0,0,.88);opacity:0;pointer-events:none;transition:opacity .45s;cursor:pointer;}
+  #pv.show{opacity:1;pointer-events:auto;}
+  #pv img{max-width:min(62vw,520px);max-height:58vh;border:10px solid #241a10;border-radius:2px;
+    box-shadow:0 30px 90px rgba(0,0,0,.95),inset 0 0 30px rgba(0,0,0,.5);background:#111;
+    transform:scale(.94);transition:transform .45s;}
+  #pv.show img{transform:scale(1);}
+  #pv .pt{max-width:560px;text-align:center;font-size:16px;line-height:2;letter-spacing:2px;color:#e3d4b2;
+    text-shadow:0 2px 10px #000;padding:0 24px;}
+  #pv .ps{font-size:12px;letter-spacing:3px;color:#8a7a54;}
 </style>
 </head>
 <body>
@@ -81,6 +92,7 @@
   <p class="ft" id="flashText"></p>
   <button class="btn fb" id="flashBack">收 起 这 段 记 忆</button>
 </div>
+<div id="pv"><img id="pvImg" alt=""><div class="pt" id="pvTxt"></div><div class="ps">点 击 任 意 处 放 回</div></div>
 <div id="pad"><i></i></div>
 <div id="eBtn">E</div>
 <div id="gate">
@@ -210,18 +222,39 @@ entryHinge.rotation.y = -1.25;
 const ENTRYDOOR = new THREE.Vector3(1.2, 1.1, 2.55);
 
 // ===== 窗(雨夜,两扇共用雨纹理)+ 窗帘 =====
-const rainCv = document.createElement("canvas"); rainCv.width=128; rainCv.height=128;
-const rainTex = new THREE.CanvasTexture(rainCv);
+const rainCv = document.createElement("canvas"); rainCv.width=192; rainCv.height=160;
+const rainTex = new THREE.CanvasTexture(rainCv); rainTex.colorSpace = THREE.SRGBColorSpace;
 let lightning = 0;
+// 远处楼宇的窗灯:位置初始化时定死,别每帧乱跳
+const CITY=[]; for(let i=0;i<26;i++) CITY.push({x:Math.random()*192, y:118+Math.random()*34, w:2+Math.random()*2.5, on:Math.random()<0.7});
 function drawRainTex(){
-  const x = rainCv.getContext("2d");
-  const sky = 10 + lightning*190;
-  x.fillStyle = `rgb(${sky*0.9|0},${sky|0},${sky*1.25+8|0})`; x.fillRect(0,0,128,128);
-  x.strokeStyle = `rgba(190,210,235,${0.25+lightning*0.5})`; x.lineWidth = 1;
-  for(let i=0;i<26;i++){ const rx=(Math.random()*128)|0, ry=(Math.random()*128)|0, l=4+Math.random()*9;
-    x.beginPath(); x.moveTo(rx,ry); x.lineTo(rx-1,ry+l); x.stroke(); }
+  const x = rainCv.getContext("2d"), L = lightning;
+  const g = x.createLinearGradient(0,0,0,160);
+  g.addColorStop(0, `rgb(${8+L*160|0},${12+L*170|0},${28+L*190|0})`);
+  g.addColorStop(1, `rgb(${18+L*150|0},${22+L*160|0},${42+L*180|0})`);
+  x.fillStyle=g; x.fillRect(0,0,192,160);
+  // 云隙月光
+  const mg=x.createRadialGradient(148,26,2,148,26,42);
+  mg.addColorStop(0,"rgba(208,218,235,.55)"); mg.addColorStop(1,"rgba(208,218,235,0)");
+  x.fillStyle=mg; x.fillRect(96,0,96,74);
+  // 远处楼影+零星亮着的窗
+  x.fillStyle=`rgba(4,6,10,${0.92-L*0.5})`; x.fillRect(0,112,192,48);
+  for(const c of CITY){ if(!c.on) continue;
+    x.fillStyle=`rgba(255,214,140,${0.5+L*0.3})`; x.fillRect(c.x,c.y,c.w,2); }
+  // 斜雨+玻璃上的挂珠
+  x.strokeStyle=`rgba(190,210,235,${0.2+L*0.5})`; x.lineWidth=1;
+  for(let i=0;i<34;i++){ const rx=Math.random()*192, ry=Math.random()*160, l=6+Math.random()*12;
+    x.beginPath(); x.moveTo(rx,ry); x.lineTo(rx-2,ry+l); x.stroke(); }
+  x.fillStyle="rgba(200,220,240,.32)";
+  for(let i=0;i<10;i++){ x.beginPath(); x.arc(Math.random()*192,Math.random()*160,0.8,0,7); x.fill(); }
   rainTex.needsUpdate = true;
 }
+// 有真图就热替换(没有就用上面的程序化夜雨,不走manager不卡载入门)
+const plainL = new THREE.TextureLoader();
+function hotImg(url, mat){ plainL.load(url, t=>{ t.colorSpace=THREE.SRGBColorSpace;
+  mat.map=t; mat.needsUpdate=true; }, undefined, ()=>{}); }
+const glassMat = new THREE.MeshBasicMaterial({ map:rainTex, side:THREE.DoubleSide });
+hotImg("./assets/home/window_night.jpg", glassMat);
 const winFrameM = new THREE.MeshStandardMaterial({ color:0x33291c, roughness:.6 });
 const curtainM = new THREE.MeshStandardMaterial({ color:0x5f4636, roughness:.95 });
 function windowUnit(x,z,ry){
@@ -231,8 +264,9 @@ function windowUnit(x,z,ry){
   const f3=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.22,0.07),winFrameM); f3.position.x=-0.75; g.add(f3);
   const f4=f3.clone(); f4.position.x=0.75; g.add(f4);
   const f5=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.16,0.05),winFrameM); g.add(f5);
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.44,1.16), new THREE.MeshBasicMaterial({ map:rainTex }));
-  glass.rotation.y=Math.PI; glass.position.z=-0.02; g.add(glass);
+  // 玻璃朝屋里(原来rotation.y=PI背对玩家+埋进墙,单面材质被剔除=窗框里只剩墙)
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.44,1.16), glassMat);
+  glass.position.z=0.03; g.add(glass);
   for(const cx of [-0.95,0.95]){
     const c=new THREE.Mesh(new THREE.BoxGeometry(0.26,2.2,0.1),curtainM);
     c.position.set(cx,-0.12,0.09); g.add(c);
@@ -266,7 +300,8 @@ const photoTex = (()=>{ const cv=document.createElement("canvas"); cv.width=192;
   for(let i=0;i<7;i++){ x.beginPath(); x.ellipse(96+(Math.random()-0.5)*8,148+(Math.random()-0.5)*6,9,5,Math.random(),0,7); x.fill(); }
   x.fillStyle="rgba(60,44,28,0.25)"; x.fillRect(0,0,192,10); x.fillRect(0,246,192,10);   // 老照片压边
   const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t; })();
-frameArt(0.6,0.8, 1.95,1.65,1.6, -Math.PI/2, photoTex);
+const photoG = frameArt(0.6,0.8, 1.95,1.65,1.6, -Math.PI/2, photoTex);
+hotImg("./assets/home/photo_family.jpg", photoG.children[1].material);   // 有真照片就热替换
 const PHOTO = new THREE.Vector3(1.95,1.6,1.6);
 // 蜡笔画:房子太阳一家三口,中间的小人被红蜡笔涂掉
 const drawTex = (()=>{ const cv=document.createElement("canvas"); cv.width=256; cv.height=192;
@@ -287,7 +322,8 @@ const drawTex = (()=>{ const cv=document.createElement("canvas"); cv.width=256; 
   for(let i=0;i<6;i++){ x.beginPath(); x.moveTo(192+Math.random()*6,108+i*12);
     x.lineTo(220+Math.random()*6,116+i*12); x.stroke(); }
   const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t; })();
-frameArt(0.7,0.52,-3.49,1.65,-0.9, Math.PI/2, drawTex);
+const drawG = frameArt(0.7,0.52,-3.49,1.65,-0.9, Math.PI/2, drawTex);
+hotImg("./assets/home/drawing_child.jpg", drawG.children[1].material);   // 有真图就热替换
 const DRAW = new THREE.Vector3(-3.49,1.6,-0.9);
 
 // ===== 灯(全部不投影;数量补亮度) =====
@@ -334,9 +370,11 @@ const mbGroup = new THREE.Group(); mbGroup.position.set(-1.7, 0.52, 0.9); scene.
 const mbBase = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.09,0.14),
   new THREE.MeshStandardMaterial({ color:0x6e4520, roughness:.42, metalness:.2, emissive:0x000000 }));
 mbGroup.add(mbBase);
+// 盒盖挂在后沿铰链上,开盒时真的翻开
+const mbLidH = new THREE.Group(); mbLidH.position.set(0,0.045,-0.07); mbGroup.add(mbLidH);
 const mbLid = new THREE.Mesh(new THREE.BoxGeometry(0.21,0.03,0.15),
   new THREE.MeshStandardMaterial({ color:0x7e5228, roughness:.4 }));
-mbLid.position.y=0.06; mbGroup.add(mbLid);
+mbLid.position.set(0,0.015,0.075); mbLidH.add(mbLid);
 const mbLight = new THREE.PointLight(0xffcf8a, 0, 2.0, 2); mbLight.position.set(0,0.16,0); mbGroup.add(mbLight);
 const MB = new THREE.Vector3(); mbGroup.getWorldPosition(MB);
 
@@ -354,11 +392,24 @@ function loadModel(slug, cfg){
     if(cfg.onload) cfg.onload(o);
   });
 }
-loadModel("sofa_02",               { x:-3.0, z:0.9, rotY: Math.PI/2, solidR:0.95 });
-loadModel("modern_coffee_table_01",{ x:-1.7, z:0.9, rotY: 0, solidR:0.55, onload(o){
+// 沙发/茶几碰撞体按模型真实包围盒生成(原来r0.95大圆+手写矩形两套叠着,沙发前一整条路全是空气墙)
+loadModel("sofa_02",               { x:-3.0, z:0.9, rotY: Math.PI/2, onload(o){
+  const b=new THREE.Box3().setFromObject(o);
+  solids.push({rect:true, x0:b.min.x+0.04, x1:b.max.x-0.04, z0:b.min.z+0.04, z1:b.max.z-0.04}); } });
+loadModel("modern_coffee_table_01",{ x:-1.7, z:0.9, rotY: 0, onload(o){
   o.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(o);
-  mbGroup.position.y = b.max.y + 0.045; mbGroup.getWorldPosition(MB); } });
+  solids.push({rect:true, x0:b.min.x+0.03, x1:b.max.x-0.03, z0:b.min.z+0.03, z1:b.max.z-0.03});
+  mbGroup.position.y = b.max.y + 0.045; mbGroup.getWorldPosition(MB);
+  // 茶几摆件:凉透的茶+旧报纸(高度跟着桌面走)
+  const cupM=new THREE.MeshStandardMaterial({color:0xd8cfc0, roughness:.35});
+  const saucer=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.008,16), cupM);
+  saucer.position.set(-1.45, b.max.y+0.006, 0.7); scene.add(saucer);
+  const cup=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.028,0.07,14), cupM);
+  cup.position.set(-1.45, b.max.y+0.045, 0.7); scene.add(cup);
+  const paper=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.006,0.17),
+    new THREE.MeshStandardMaterial({color:0xcfc7b2, roughness:.9}));
+  paper.rotation.y=0.4; paper.position.set(-1.92, b.max.y+0.005, 1.08); scene.add(paper); } });
 loadModel("potted_plant_01",       { x:-3.15, z:2.1, rotY: 0.4, solidR:0.3 });
 loadModel("wooden_bookshelf_worn", { x:-2.0, z:-2.42, rotY: 0, solidR:0.5 });
 loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
@@ -381,12 +432,20 @@ loadModel("Television_01", { x:1.72, z:0.9, y:0.42, rotY: -Math.PI/2, onload(o){
   tvScreen.position.set(b.min.x-0.005, (b.min.y+b.max.y)/2+0.03, (b.min.z+b.max.z)/2);
   scene.add(tvScreen);
 }});
-solids.push({rect:true, x0:-3.5, x1:-2.4, z0:-0.15, z1:1.95});   // 沙发
-solids.push({rect:true, x0:-2.2, x1:-1.2, z0:0.4, z1:1.4});      // 茶几
 // 地毯
 { const rug=new THREE.Mesh(new THREE.CircleGeometry(1.15,36),
     new THREE.MeshStandardMaterial({color:0x53321f, roughness:.97}));
   rug.rotation.x=-Math.PI/2; rug.scale.y=0.75; rug.position.set(-1.7,0.005,0.9); scene.add(rug); }
+// 电视柜面摆件:遥控器/两本旧书/黄铜座钟
+box(new THREE.MeshStandardMaterial({color:0x14100c, roughness:.5}), 0.045,0.014,0.13, 1.32,0.435,1.06);
+box(new THREE.MeshStandardMaterial({color:0x5a3a2a, roughness:.7}), 0.19,0.03,0.14, 1.28,0.443,0.68);
+box(new THREE.MeshStandardMaterial({color:0x36452e, roughness:.7}), 0.17,0.028,0.13, 1.30,0.472,0.70);
+{ const clock=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.028,16),
+    new THREE.MeshStandardMaterial({color:0x8a7440, roughness:.35, metalness:.7}));
+  clock.rotation.x=Math.PI/2; clock.position.set(2.12,0.475,0.72); scene.add(clock);
+  const face=new THREE.Mesh(new THREE.CircleGeometry(0.038,16),
+    new THREE.MeshStandardMaterial({color:0xe8e0cc, roughness:.4}));
+  face.position.set(2.12,0.475,0.736); scene.add(face); }
 
 // ===== 厨房(橱柜/水槽/灶台/冰箱) =====
 const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
@@ -405,10 +464,33 @@ box(steelM, 0.45, 0.06, 0.5, 5.10, 0.935, -0.5);
   spout.rotation.z=Math.PI/2; spout.position.set(5.24,1.17,-0.5); scene.add(spout); }
 // 灶台(黑玻璃面)
 box(new THREE.MeshStandardMaterial({ color:0x0d0d0f, roughness:.15 }), 0.5, 0.012, 0.55, 5.10, 0.925, 0.25);
-// 冰箱
-box(new THREE.MeshStandardMaterial({ color:0xb9bec2, roughness:.35, metalness:.5 }), 0.75, 1.85, 0.72, 4.85, 0.925, -2.2);
-{ const h1=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.5,0.04), steelM); h1.position.set(4.48,1.35,-1.86); scene.add(h1);
-  const h2=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.32,0.04), steelM); h2.position.set(4.48,0.62,-1.86); scene.add(h2); }
+// 台面摆件:砧板/两个调料罐/灶上一口锅(妈妈说"饭在锅里")
+box(new THREE.MeshStandardMaterial({color:0x9a7a4e, roughness:.8}), 0.3,0.022,0.2, 5.08,0.945,0.68);
+for(const [pz,ch] of [[0.5,0x7a4a28],[0.585,0x4a5a30]]){
+  const jar=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.09,10),
+    new THREE.MeshStandardMaterial({color:ch, roughness:.4})); jar.position.set(5.33,0.98,pz); scene.add(jar); }
+{ const potM=new THREE.MeshStandardMaterial({color:0x23262a, roughness:.35, metalness:.6});
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.1,0.085,18), potM);
+  pot.position.set(5.10,0.975,0.25); scene.add(pot);
+  const lid=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.115,0.012,18),
+    new THREE.MeshStandardMaterial({color:0x2e3236, roughness:.3, metalness:.7}));
+  lid.position.set(5.10,1.024,0.25); scene.add(lid);
+  const knb=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,6),
+    new THREE.MeshStandardMaterial({color:0x111111, roughness:.4})); knb.position.set(5.10,1.04,0.25); scene.add(knb); }
+// 冰箱(门真的能开:按E拉开→里面空的+冷藏灯一直闪→几秒后自己合上)
+const fridgeM = new THREE.MeshStandardMaterial({ color:0xb9bec2, roughness:.35, metalness:.5 });
+box(fridgeM, 0.67, 1.85, 0.72, 4.89, 0.925, -2.2);                                  // 箱体
+plane(new THREE.MeshStandardMaterial({color:0x0b0d0f, roughness:.9}), 0.68, 1.72,   // 内腔黑
+  [4.55,0.94,-2.2],[0,-Math.PI/2,0]);
+for(const sy of [0.5,0.95,1.4]) box(new THREE.MeshStandardMaterial({color:0xd6dade, roughness:.4}),
+  0.02,0.012,0.6, 4.535,sy,-2.2);                                                   // 空架子,空得刺眼(关门时藏在门板里)
+const frHinge=new THREE.Group(); frHinge.position.set(4.545,0.925,-2.545); scene.add(frHinge);
+const frDoor=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.82,0.70), fridgeM);
+frDoor.position.set(0,0,0.35); frHinge.add(frDoor);
+{ const h1=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.5,0.04), steelM); h1.position.set(-0.045,0.42,0.62); frHinge.add(h1);
+  const h2=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.32,0.04), steelM); h2.position.set(-0.045,-0.31,0.62); frHinge.add(h2); }
+const frLight = new THREE.PointLight(0xcfe4ff, 0, 1.8, 2.0); frLight.position.set(4.42,1.3,-2.2); scene.add(frLight);
+let frT=0, frOpen=false;
 solids.push({rect:true, x0:4.75, x1:5.45, z0:-2.6, z1:0.75});
 const SINK = new THREE.Vector3(5.1,0.95,-0.5);
 const FRIDGE = new THREE.Vector3(4.85,1.0,-2.2);
@@ -744,6 +826,14 @@ function caption(text, ms){
   const el=$("#cap"); el.textContent=text; el.classList.add("show");
   clearTimeout(capTimer); capTimer=setTimeout(()=>el.classList.remove("show"), ms||3600);
 }
+// 看清挂画:按E弹大图(canvas直接转dataURL,换真图后自动跟着换)
+const pv=$("#pv"), pvImg=$("#pvImg"), pvTxt=$("#pvTxt");
+function texToURL(mat){ const im=mat.map&&mat.map.image; if(!im) return null;
+  return im.toDataURL ? im.toDataURL("image/png") : im.src; }
+function showPhoto(mesh, text){ const u=texToURL(mesh.material); if(!u) return;
+  pvImg.src=u; pvTxt.textContent=text; pv.classList.add("show"); frozen=true;
+  if(document.pointerLockElement) document.exitPointerLock(); }
+pv.addEventListener("click", ()=>{ pv.classList.remove("show"); if(!dead) frozen=false; });
 
 // ===== 交互 / 事件 =====
 let EVT=0;
@@ -776,8 +866,8 @@ function updatePrompt(){
   else if(bedSlammed&&nearFacing(BEDDOOR,1.3)) hot={id:"bed", tip:"按 E 推卧室门"};
   else if(nearFacing(TOILET,1.35)&&!toiletFlushed&&EVT>=3) hot={id:"toilet", tip:"按 E 按下冲水"};
   else if(nearFacing(BOWLS,1.5)&&!bowlsDone) hot={id:"bowls", tip:"按 E 看看碗筷"};
-  else if(nearFacing(PHOTO,1.7)&&!photoDone) hot={id:"photo", tip:"按 E 看全家福"};
-  else if(nearFacing(DRAW,1.7)&&!drawDone) hot={id:"draw", tip:"按 E 看那张画"};
+  else if(nearFacing(PHOTO,1.7)) hot={id:"photo", tip:"按 E 看全家福"};
+  else if(nearFacing(DRAW,1.7)) hot={id:"draw", tip:"按 E 看那张画"};
   else if(nearFacing(BOOKS,1.5)&&!booksDone) hot={id:"books", tip:"按 E 翻翻书架"};
   else if(nearFacing(MB,1.4)){ hot = EVT>=5 ? {id:"mb", tip:"按 E 打开音乐盒"} : {id:"mb0", tip:"按 E 看看音乐盒"}; }
   if(hot){ promptEl.textContent=hot.tip; promptEl.classList.add("show"); }
@@ -796,8 +886,9 @@ function act(){
     setTimeout(()=>{ setTap(false); caption("它又自己关上了。", 2800); }, 5200);
   }
   if(hot.id==="fridge"){
-    fridgeDone=true; hum(); creak(0.8, 240, 160); addNoise(0.3);
-    caption("里面是空的。可冷藏灯一直在闪。", 3800);
+    fridgeDone=true; hum(); creak(0.8, 240, 160); addNoise(0.3); frOpen=true;
+    setTimeout(()=>caption("里面是空的。可冷藏灯一直在闪。", 3600), 800);
+    setTimeout(()=>{ frOpen=false; thud(); caption("门自己合上了。", 2400); }, 4600);
   }
   if(hot.id==="bed"){
     thud(); addNoise(0.35); caption("反锁了。门后传来一声，像有人转过身去。", 4200);
@@ -820,16 +911,28 @@ function act(){
     caption("桌上两副碗筷。一副动过——另一副是留给你的，汤还是温的。", 4600);
   }
   if(hot.id==="photo"){
-    photoDone=true; addNoise(0.08);
-    caption("全家福。爸爸、妈妈，和中间的你——你的脸，被人用手指抹掉了。", 4800);
+    if(!photoDone){ photoDone=true; addNoise(0.08); }
+    showPhoto(photoG.children[1], "全家福。爸爸、妈妈，和中间的你——你的脸，被人用手指抹掉了。");
   }
   if(hot.id==="draw"){
-    drawDone=true; addNoise(0.08);
-    caption("你小时候画的。房子、太阳、一家三口——中间的小人，被红蜡笔用力涂掉了。", 4800);
+    if(!drawDone){ drawDone=true; addNoise(0.08); }
+    showPhoto(drawG.children[1], "你小时候画的。房子、太阳、一家三口——中间的小人，被红蜡笔用力涂掉了。");
   }
   if(hot.id==="books"){
     booksDone=true; creak(0.5, 320, 220); addNoise(0.22);
-    caption("一整排书，书脊全是空白。抽出一本——里面一个字也没有。", 4400);
+    // 一本书真的被抽出来,翻着掉到地上
+    const bk=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.22,0.16),
+      new THREE.MeshStandardMaterial({color:0x6a4630, roughness:.7}));
+    bk.position.set(-2.1,1.25,-2.28); scene.add(bk);
+    const t0=performance.now(); let thudded=false;
+    (function an(){ const t=(performance.now()-t0)/1000;
+      if(t<0.5){ bk.position.z=-2.28+(t/0.5)*0.2; }
+      else if(t<1.0){ const q=(t-0.5)/0.5;
+        bk.position.z=-2.08+q*0.3; bk.position.y=1.25-q*q*1.14;
+        bk.rotation.x=-q*1.45; bk.rotation.z=q*0.35; }
+      else { bk.position.y=0.11; if(!thudded){ thudded=true; bumpSnd(); } return; }
+      requestAnimationFrame(an); })();
+    setTimeout(()=>caption("一整排书，书脊全是空白。抽出一本——里面一个字也没有。", 4400), 800);
   }
   if(hot.id==="mb0"){ caption("音乐盒一动不动，像在等什么。", 3000); }
   if(hot.id==="mb"){ addNoise(0.4); openBox(); }
@@ -839,10 +942,17 @@ let boxOpened=false;
 function openBox(){
   if(boxOpened) return; boxOpened=true; frozen=true;
   if(document.pointerLockElement) document.exitPointerLock();
-  const fEl=$("#flash"); fEl.classList.add("show");
-  const ft=$("#flashText"); ft.textContent="";
-  let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
-    if(i>=MEMORY.length){ clearInterval(timer); setTimeout(()=>$("#flashBack").classList.add("show"),500); } }, 42);
+  // 盒盖缓缓翻开+暖光涨起,看清了这个动作再进记忆
+  const t0=performance.now();
+  (function an(){ const t=Math.min(1,(performance.now()-t0)/900);
+    const e2=t*t*(3-2*t); mbLidH.rotation.x=-1.5*e2; mbLight.intensity=1.4+e2*2.4;
+    if(t<1) requestAnimationFrame(an); })();
+  setTimeout(()=>{
+    const fEl=$("#flash"); fEl.classList.add("show");
+    const ft=$("#flashText"); ft.textContent="";
+    let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
+      if(i>=MEMORY.length){ clearInterval(timer); setTimeout(()=>$("#flashBack").classList.add("show"),500); } }, 42);
+  }, 1200);
 }
 $("#flashBack").addEventListener("click", ()=>{
   try{ const c=JSON.parse(localStorage.getItem("mf3d_cleared")||"[]");
@@ -1020,6 +1130,10 @@ function frame(){
   if(bathDoorOpen && bathDoorT<1){ bathDoorT=Math.min(1,bathDoorT+dt*0.16);
     const e=bathDoorT*bathDoorT*(3-2*bathDoorT);   // 缓入缓出+末段带一点卡顿的颤,不再匀速
     bathHinge.rotation.y = -(1.9*e + 0.05*Math.sin(bathDoorT*16)*(1-bathDoorT)); }
+  // 冰箱门开合(缓动)+冷藏灯闪
+  frT += ((frOpen?1:0)-frT)*Math.min(1,dt*4.0);
+  frHinge.rotation.y = -1.8 * frT*frT*(3-2*frT);
+  frLight.intensity = frT>0.1 ? frT*(0.5+(Math.random()<0.14?0:0.9)) : 0;
   if((tGlobal*10|0)%2===0) drawRainTex();
   boltT-=dt;
   if(boltT<=0){ boltT=13+Math.random()*20; lightning=1; setTimeout(rumble, 400+Math.random()*800); }
