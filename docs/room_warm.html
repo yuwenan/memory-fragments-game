@@ -166,7 +166,11 @@ plane(ceilMat, 3.4, 3.6, [3.7,2.8,-0.8], [Math.PI/2,0,0]);
 plane(ceilMat, 1.4, 3.6, [-0.3,2.5,-4.4], [Math.PI/2,0,0]);
 plane(ceilMat, 3.3, 2.2, [-0.75,2.5,-7.3], [Math.PI/2,0,0]);
 // 墙
-box(wallMat, 5.5, 2.8, 0.1, -0.75, 1.4, 2.65);           // 客厅南(门窗贴上面)
+// 客厅南墙:窗户位置真开洞(左/右/窗下/窗楣四段),窗洞x[-2.35,-0.85] y[0.9,2.1]
+box(wallMat, 1.15, 2.8, 0.1, -2.925, 1.4, 2.65);
+box(wallMat, 2.85, 2.8, 0.1, 0.575, 1.4, 2.65);
+box(wallMat, 1.5, 0.9, 0.1, -1.6, 0.45, 2.65);
+box(wallMat, 1.5, 0.7, 0.1, -1.6, 2.45, 2.65);
 box(wallMat, 0.1, 2.8, 5.2, -3.55, 1.4, 0);              // 客厅西
 box(wallMat, 2.5, 2.8, 0.1, -2.25, 1.4, -2.65);          // 客厅北左
 box(wallMat, 1.6, 2.8, 0.1, 1.2, 1.4, -2.65);            // 客厅北右
@@ -176,7 +180,11 @@ box(wallMat, 0.1, 2.8, 2.2, 2.0, 1.4, 1.5);              // 段2
 box(wallMat, 0.1, 0.7, 1.6, 2.0, 2.45, -0.4);            // 开口门楣
 box(wallMat, 3.4, 2.8, 0.1, 3.7, 1.4, 1.05);             // 厨房南
 box(wallMat, 0.1, 2.8, 3.7, 5.45, 1.4, -0.8);            // 厨房东
-box(wallMat, 3.5, 2.8, 0.1, 3.7, 1.4, -2.65);            // 厨房北
+// 厨房北墙:窗户开洞,窗洞x[3.25,4.75] y[0.9,2.1]
+box(wallMat, 1.3, 2.8, 0.1, 2.6, 1.4, -2.65);
+box(wallMat, 0.7, 2.8, 0.1, 5.1, 1.4, -2.65);
+box(wallMat, 1.5, 0.9, 0.1, 4.0, 0.45, -2.65);
+box(wallMat, 1.5, 0.7, 0.1, 4.0, 2.45, -2.65);
 // 走道
 box(wallMat, 0.1, 2.5, 3.6, -1.05, 1.25, -4.4);
 box(wallMat, 0.1, 2.5, 3.6, 0.45, 1.25, -4.4);
@@ -257,22 +265,29 @@ const glassMat = new THREE.MeshBasicMaterial({ map:rainTex, side:THREE.DoubleSid
 hotImg("./assets/home/window_night.jpg", glassMat);
 const winFrameM = new THREE.MeshStandardMaterial({ color:0x33291c, roughness:.6 });
 const curtainM = new THREE.MeshStandardMaterial({ color:0x5f4636, roughness:.95 });
+// 真窗户:墙上开了洞——洞内衬(看得出墙有厚度)+房间面窗框+中梃+玻璃退到墙厚深处+窗台+褶皱窗帘
+// 之前是墙面上浮着一张发光贴图+薄黑框,读作一幅画
 function windowUnit(x,z,ry){
   const g=new THREE.Group(); g.position.set(x,1.5,z); g.rotation.y=ry; scene.add(g);
-  const f1=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.06,0.07),winFrameM); f1.position.y=0.58; g.add(f1);
-  const f2=f1.clone(); f2.position.y=-0.58; g.add(f2);
-  const f3=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.22,0.07),winFrameM); f3.position.x=-0.75; g.add(f3);
-  const f4=f3.clone(); f4.position.x=0.75; g.add(f4);
-  const f5=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.16,0.05),winFrameM); g.add(f5);
-  // 玻璃朝屋里(原来rotation.y=PI背对玩家+埋进墙,单面材质被剔除=窗框里只剩墙)
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.44,1.16), glassMat);
-  glass.position.z=0.03; g.add(glass);
-  for(const cx of [-0.95,0.95]){
-    const c=new THREE.Mesh(new THREE.BoxGeometry(0.26,2.2,0.1),curtainM);
-    c.position.set(cx,-0.12,0.09); g.add(c);
+  const revealM=new THREE.MeshStandardMaterial({ color:0xcfc4ae, roughness:.7 });
+  const rv=(w,h,px,py)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.13),revealM);
+    m.position.set(px,py,-0.045); g.add(m); };
+  rv(1.56,0.035, 0,0.6); rv(1.56,0.035, 0,-0.6); rv(0.035,1.24,-0.76,0); rv(0.035,1.24,0.76,0);
+  const fb=(w,h,px,py)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.045),winFrameM);
+    m.position.set(px,py,0.012); g.add(m); };
+  fb(1.66,0.07,0,0.615); fb(1.66,0.07,0,-0.615); fb(0.07,1.16,-0.795,0); fb(0.07,1.16,0.795,0);
+  const mul=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.2,0.05),winFrameM);
+  mul.position.set(0,0,-0.03); g.add(mul);
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.2), glassMat);
+  glass.position.z=-0.085; g.add(glass);
+  const sill=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.045,0.16),revealM);
+  sill.position.set(0,-0.63,0.05); g.add(sill);
+  for(const cx of [-0.98,0.98]) for(let i=0;i<5;i++){
+    const pl=new THREE.Mesh(new THREE.BoxGeometry(0.085,2.15,0.03),curtainM);
+    pl.position.set(cx+(i-2)*0.082, -0.12, 0.1+(i%2)*0.02); g.add(pl);
   }
-  const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,2.3,8),winFrameM);
-  rod.rotation.z=Math.PI/2; rod.position.set(0,1.0,0.1); g.add(rod);
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,2.6,8),winFrameM);
+  rod.rotation.z=Math.PI/2; rod.position.set(0,1.06,0.13); g.add(rod);
 }
 windowUnit(-1.6, 2.59, Math.PI);   // 客厅南窗
 windowUnit(4.0, -2.59, 0);         // 厨房北窗
@@ -337,16 +352,21 @@ box(new THREE.MeshStandardMaterial({color:0x1c150c}), 0.02,0.24,0.02, -0.3,2.4,-
 const bathLight = new THREE.PointLight(0xd7e8ff, 0, 5.5, 2.0); bathLight.position.set(-0.75,2.3,-7.3); scene.add(bathLight);
 const tubeMat = new THREE.MeshBasicMaterial({ color:0x0e1114 });
 const tube = box(tubeMat, 0.9, 0.045, 0.1, -0.75, 2.44, -7.3);
-const tvLight = new THREE.PointLight(0x9fc4ff, 0, 5, 2.0); tvLight.position.set(1.3,1.0,0.9); scene.add(tvLight);
+const tvLight = new THREE.PointLight(0x9fc4ff, 0, 5, 2.0); tvLight.position.set(1.35,1.0,1.2); scene.add(tvLight);
 // 落地灯(沙发角)
 const flG = new THREE.Group(); flG.position.set(-3.15,0,-1.95); scene.add(flG);
 { const base=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.16,0.03,14),
     new THREE.MeshStandardMaterial({color:0x1c1712, roughness:.5, metalness:.4})); base.position.y=0.015; flG.add(base);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,1.35,10),
     new THREE.MeshStandardMaterial({color:0x2a241c, roughness:.4, metalness:.6})); pole.position.y=0.7; flG.add(pole);
-  const shade=new THREE.Mesh(new THREE.ConeGeometry(0.19,0.24,16,1,true),
-    new THREE.MeshStandardMaterial({color:0xc9a86a, roughness:.9, side:THREE.DoubleSide,
-      emissive:0x3a2408, emissiveIntensity:1})); shade.position.y=1.44; flG.add(shade); }
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.12,8),
+    new THREE.MeshStandardMaterial({color:0x8a7440, roughness:.35, metalness:.7}));
+  neck.position.y=1.32; flG.add(neck);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.035,10,8),
+    new THREE.MeshBasicMaterial({color:0xffe8c0})); bulb.position.y=1.41; flG.add(bulb);
+  const shade=new THREE.Mesh(new THREE.CylinderGeometry(0.125,0.175,0.26,18,1,true),
+    new THREE.MeshStandardMaterial({color:0xd8bd8e, roughness:.85, side:THREE.DoubleSide,
+      emissive:0x6b4a1e, emissiveIntensity:.9})); shade.position.y=1.42; flG.add(shade); }
 const floorLamp = new THREE.PointLight(0xffcf92, 1.7, 6, 1.9); floorLamp.position.set(-3.15,1.36,-1.95); scene.add(floorLamp);
 solids.push({x:-3.15,z:-1.95,r:0.22});
 
@@ -411,7 +431,26 @@ loadModel("modern_coffee_table_01",{ x:-1.7, z:0.9, rotY: 0, onload(o){
     new THREE.MeshStandardMaterial({color:0xcfc7b2, roughness:.9}));
   paper.rotation.y=0.4; paper.position.set(-1.92, b.max.y+0.005, 1.08); scene.add(paper); } });
 loadModel("potted_plant_01",       { x:-3.15, z:2.1, rotY: 0.4, solidR:0.3 });
-loadModel("wooden_bookshelf_worn", { x:-2.0, z:-2.42, rotY: 0, solidR:0.5 });
+loadModel("wooden_bookshelf_worn", { x:-2.0, z:-2.42, rotY: 0, solidR:0.5, onload(o){
+  // 每格塞满褪色旧书(书脊全是空白的那批):共享几种材质,位置按包围盒算
+  const b=new THREE.Box3().setFromObject(o);
+  const H=b.max.y-b.min.y;
+  const mats=[0x6a5240,0x584a3a,0x4a5244,0x6e5a48,0x705848,0x5a4a44,0x625a4c]
+    .map(c=>new THREE.MeshStandardMaterial({color:c, roughness:.85}));
+  for(const t of [0.10,0.25,0.39,0.55,0.70]){          // 各层隔板上表面的高度占比
+    let px=b.min.x+0.09;
+    while(px < b.max.x-0.12){
+      const bw=0.026+Math.random()*0.02, bh=0.15+Math.random()*0.05;
+      if(Math.random()<0.86){
+        const bk=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,0.13), mats[(Math.random()*mats.length)|0]);
+        bk.position.set(px+bw/2, b.min.y+H*t+bh/2, -2.42+(Math.random()*0.02-0.01));
+        bk.rotation.y=(Math.random()-0.5)*0.06;
+        scene.add(bk);
+      }
+      px+=bw+0.004;
+    }
+  }
+} });
 loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
 loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
@@ -419,11 +458,11 @@ loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
 loadModel("wooden_table_02",       { x:3.7, z:-0.1, rotY: 0.3, solidR:0.75 });
 loadModel("painted_wooden_chair_01",{ x:3.1, z:-0.75, rotY: 0.5, solidR:0.28 });
 loadModel("painted_wooden_chair_01",{ x:4.3, z:0.45, rotY: -2.4, solidR:0.28 });
-// 电视柜+电视
-box(new THREE.MeshStandardMaterial({ color:0x241a10, roughness:.55 }), 1.15,0.42,0.5, 1.72,0.21,0.9);
-solids.push({rect:true, x0:1.4, x1:2.0, z0:0.55, z1:1.3});
+// 电视柜+电视:长边顺着隔墙贴放(原来横着杵出来,一头戳进厨房一头顶着门口)
+box(new THREE.MeshStandardMaterial({ color:0x241a10, roughness:.55 }), 0.5,0.42,1.15, 1.75,0.21,1.2);
+solids.push({rect:true, x0:1.5, x1:2.0, z0:0.6, z1:1.8});
 let tvScreen=null;
-loadModel("Television_01", { x:1.72, z:0.9, y:0.42, rotY: -Math.PI/2, onload(o){
+loadModel("Television_01", { x:1.75, z:1.2, y:0.42, rotY: -Math.PI/2, onload(o){
   const b=new THREE.Box3().setFromObject(o);
   const w=(b.max.z-b.min.z)*0.62, h=(b.max.y-b.min.y)*0.55;
   tvScreen = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
@@ -436,16 +475,16 @@ loadModel("Television_01", { x:1.72, z:0.9, y:0.42, rotY: -Math.PI/2, onload(o){
 { const rug=new THREE.Mesh(new THREE.CircleGeometry(1.15,36),
     new THREE.MeshStandardMaterial({color:0x53321f, roughness:.97}));
   rug.rotation.x=-Math.PI/2; rug.scale.y=0.75; rug.position.set(-1.7,0.005,0.9); scene.add(rug); }
-// 电视柜面摆件:遥控器/两本旧书/黄铜座钟
-box(new THREE.MeshStandardMaterial({color:0x14100c, roughness:.5}), 0.045,0.014,0.13, 1.32,0.435,1.06);
-box(new THREE.MeshStandardMaterial({color:0x5a3a2a, roughness:.7}), 0.19,0.03,0.14, 1.28,0.443,0.68);
-box(new THREE.MeshStandardMaterial({color:0x36452e, roughness:.7}), 0.17,0.028,0.13, 1.30,0.472,0.70);
+// 电视柜面摆件:遥控器/两本旧书/黄铜座钟(柜子顺墙后重新落位,钟面朝屋里)
+box(new THREE.MeshStandardMaterial({color:0x14100c, roughness:.5}), 0.045,0.014,0.13, 1.58,0.435,0.68);
+box(new THREE.MeshStandardMaterial({color:0x5a3a2a, roughness:.7}), 0.14,0.03,0.19, 1.62,0.443,1.66);
+box(new THREE.MeshStandardMaterial({color:0x36452e, roughness:.7}), 0.13,0.028,0.17, 1.63,0.472,1.67);
 { const clock=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.028,16),
     new THREE.MeshStandardMaterial({color:0x8a7440, roughness:.35, metalness:.7}));
-  clock.rotation.x=Math.PI/2; clock.position.set(2.12,0.475,0.72); scene.add(clock);
+  clock.rotation.z=Math.PI/2; clock.position.set(1.68,0.475,0.8); scene.add(clock);
   const face=new THREE.Mesh(new THREE.CircleGeometry(0.038,16),
     new THREE.MeshStandardMaterial({color:0xe8e0cc, roughness:.4}));
-  face.position.set(2.12,0.475,0.736); scene.add(face); }
+  face.rotation.y=-Math.PI/2; face.position.set(1.664,0.475,0.8); scene.add(face); }
 
 // ===== 厨房(橱柜/水槽/灶台/冰箱) =====
 const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
@@ -854,7 +893,7 @@ function nearFacing(target, maxD, minFace){
   return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
 }
 const SOFA=new THREE.Vector3(-3.0,0.8,0.9);
-const TV=new THREE.Vector3(1.74,1.0,0.9);
+const TV=new THREE.Vector3(1.75,1.0,1.2);
 let hot=null;
 function updatePrompt(){
   hot=null;
@@ -1135,6 +1174,7 @@ function frame(){
   frHinge.rotation.y = -1.8 * frT*frT*(3-2*frT);
   frLight.intensity = frT>0.1 ? frT*(0.5+(Math.random()<0.14?0:0.9)) : 0;
   if((tGlobal*10|0)%2===0) drawRainTex();
+  glassMat.color.setScalar(0.7 + lightning*0.5);   // 夜景比屋里暗一档,雷电时整扇窗亮起
   boltT-=dt;
   if(boltT<=0){ boltT=13+Math.random()*20; lightning=1; setTimeout(rumble, 400+Math.random()*800); }
   lightning=Math.max(0,lightning-dt*2.4);
