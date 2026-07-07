@@ -730,6 +730,7 @@ const mom=new THREE.Mesh(new THREE.PlaneGeometry(0.72,1.8), momMat);
 mom.position.set(0.1,0.9,-4.9); mom.visible=false; scene.add(mom);
 // 噪音系统:磕碰/翻动/开关都涨动静,过线妈妈出来;她出来时站住不动才安全
 let noise=0, momState="in", momPauseT=0, dead=false, bumpCd=0, playerMoving=false, slipT=0;
+let sitting=false, sitY=1.55, seatX=0, seatZ=0;   // 坐下:视角降到坐姿+挪到座面
 const momTarget=new THREE.Vector3(0,0,0);
 function addNoise(v){
   if(dead) return;
@@ -995,6 +996,7 @@ let hot=null;
 function updatePrompt(){
   hot=null;
   if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
+  if(sitting){ hot={id:"stand", tip:"按 E 起身"}; promptEl.textContent=hot.tip; promptEl.classList.add("show"); return; }
   if(nearFacing(SOFA,2.8,0.3)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
   else if(nearFacing(SINK,1.4)&&!sinkDone) hot={id:"sink", tip:"按 E 检查水槽"};
   else if(nearFacing(FRIDGE,1.5)&&!fridgeDone) hot={id:"fridge", tip:"按 E 打开冰箱"};
@@ -1012,9 +1014,11 @@ function updatePrompt(){
 }
 function act(){
   if(frozen||!hot) return;
+  if(hot.id==="stand"){ sitting=false; promptEl.classList.remove("show"); return; }
   if(hot.id==="sofa"){
-    sofaDone=true; creak(1.0, 260, 120); addNoise(0.15);
-    caption("坐垫是凹陷的，还有一点温度。", 3200);
+    sofaDone=true; sitting=true; seatX=-2.72; seatZ=0.9;   // 真的坐下:视角蹲下+挪到座面
+    creak(1.0, 260, 120); addNoise(0.15);
+    caption("你坐了下来。坐垫是凹陷的，还有一点温度。", 3200);
     setTimeout(()=>{ tvOn=true; setStatic(true); caption("身后，电视自己亮了。", 3600); EVT=Math.max(EVT,2); }, 1900);
   }
   if(hot.id==="sink"){
@@ -1230,9 +1234,11 @@ function frame(){
   if(started && !frozen && !$("#flash").classList.contains("show")){
     camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize(); right.crossVectors(fwd,up).normalize();
     mv.set(0,0,0);
+    if(!sitting){
     if(keys["w"]||keys["arrowup"])mv.add(fwd); if(keys["s"]||keys["arrowdown"])mv.sub(fwd);
     if(keys["d"]||keys["arrowright"])mv.add(right); if(keys["a"]||keys["arrowleft"])mv.sub(right);
     if(padActive){ mv.addScaledVector(fwd,-padVec.y); mv.addScaledVector(right,padVec.x); }
+    }
     playerMoving = mv.lengthSq()>0.0001;
     if(playerMoving){
       mv.normalize().multiplyScalar(SPEED*dt);
@@ -1250,7 +1256,13 @@ function frame(){
     }
     director(dt);
   }
-  camera.position.y=1.55;
+  // 坐姿:视角平滑降到坐面高度并挪到座位;起身回到站姿(仍留在沙发前)
+  if(sitting){
+    camera.position.x += (seatX-camera.position.x)*Math.min(1,dt*3);
+    camera.position.z += (seatZ-camera.position.z)*Math.min(1,dt*3);
+    sitY += (1.05-sitY)*Math.min(1,dt*3);
+  } else { sitY += (1.55-sitY)*Math.min(1,dt*4); }
+  camera.position.y=sitY;
   mirror.visible = camera.position.z < -5.8;   // 只在卫生间附近渲反射
   const flick = Math.random()<0.03 ? 0.45+Math.random()*0.3 : 1;
   const lateFear = EVT>=4 ? (0.75+0.25*Math.sin(tGlobal*0.7)) : 1;
