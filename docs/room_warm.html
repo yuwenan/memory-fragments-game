@@ -431,26 +431,35 @@ loadModel("modern_coffee_table_01",{ x:-1.7, z:0.9, rotY: 0, onload(o){
     new THREE.MeshStandardMaterial({color:0xcfc7b2, roughness:.9}));
   paper.rotation.y=0.4; paper.position.set(-1.92, b.max.y+0.005, 1.08); scene.add(paper); } });
 loadModel("potted_plant_01",       { x:-3.15, z:2.1, rotY: 0.4, solidR:0.3 });
-loadModel("wooden_bookshelf_worn", { x:-2.0, z:-2.42, rotY: 0, solidR:0.5, onload(o){
-  // 每格塞满褪色旧书(书脊全是空白的那批):共享几种材质,位置按包围盒算
-  const b=new THREE.Box3().setFromObject(o);
-  const H=b.max.y-b.min.y;
-  const mats=[0x6a5240,0x584a3a,0x4a5244,0x6e5a48,0x705848,0x5a4a44,0x625a4c]
+// ===== 书架(自建:GLTF模型隔板位置猜不准,书全陷进板里;自己搭,隔板/书全对齐) =====
+{
+  const shW=1.04, shH=1.92, shD=0.32, shX=-2.0, shZ=-2.47;
+  const shM=new THREE.MeshStandardMaterial({color:0x3a2a1c, roughness:.62});
+  box(shM, 0.03, shH, shD, shX-shW/2+0.015, shH/2, shZ);      // 左右侧板
+  box(shM, 0.03, shH, shD, shX+shW/2-0.015, shH/2, shZ);
+  box(shM, shW, 0.035, shD, shX, shH-0.017, shZ);             // 顶板
+  box(new THREE.MeshStandardMaterial({color:0x241a10, roughness:.8}),
+    shW-0.04, shH-0.06, 0.015, shX, shH/2, shZ-shD/2+0.02);   // 背板
+  const PLANKS=[0.05,0.42,0.79,1.16,1.53];                    // 各层隔板中心高
+  for(const py of PLANKS) box(shM, shW-0.05, 0.028, shD-0.03, shX, py, shZ);
+  // 塞满褪色布面旧书(书脊全是空白):站在隔板上,齐到前沿
+  const bmats=[0x7a5a48,0x5a6a52,0x4e5a6a,0x8a7050,0x6a4a44,0x746452,0x565048]
     .map(c=>new THREE.MeshStandardMaterial({color:c, roughness:.85}));
-  for(const t of [0.10,0.25,0.39,0.55,0.70]){          // 各层隔板上表面的高度占比
-    let px=b.min.x+0.09;
-    while(px < b.max.x-0.12){
-      const bw=0.026+Math.random()*0.02, bh=0.15+Math.random()*0.05;
-      if(Math.random()<0.86){
-        const bk=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,0.13), mats[(Math.random()*mats.length)|0]);
-        bk.position.set(px+bw/2, b.min.y+H*t+bh/2, -2.42+(Math.random()*0.02-0.01));
-        bk.rotation.y=(Math.random()-0.5)*0.06;
+  for(const py of PLANKS){
+    let px=shX-shW/2+0.05;
+    while(px < shX+shW/2-0.08){
+      const bw=0.028+Math.random()*0.022, bh=0.23+Math.random()*0.06;
+      if(Math.random()<0.88){
+        const bk=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,0.21), bmats[(Math.random()*bmats.length)|0]);
+        bk.position.set(px+bw/2, py+0.014+bh/2, shZ+0.02+(Math.random()*0.016-0.008));
+        bk.rotation.y=(Math.random()-0.5)*0.05;
         scene.add(bk);
       }
-      px+=bw+0.004;
+      px+=bw+0.005;
     }
   }
-} });
+  solids.push({rect:true, x0:shX-shW/2, x1:shX+shW/2, z0:-2.62, z1:shZ+shD/2});
+}
 loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
 loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
@@ -575,7 +584,8 @@ for(const dz of [0.026,-0.026]) for(const [py,ph] of [[1.5,0.7],[0.62,0.58]]){
   const p=new THREE.Mesh(new THREE.BoxGeometry(0.5,ph,0.012), woodPanel);
   p.position.set(0.38,py,dz); bathHinge.add(p);
 }
-let bathDoorT = 0, bathDoorOpen = false;
+let bathDoorT = 0, bathDoorOpen = false, bathRattling = false;
+const BATHDOOR = new THREE.Vector3(-0.37, 1.1, -6.27);
 
 // ===== 卧室门(走道东墙,会自己砰上反锁) =====
 box(doorFrameM, 0.06, 2.15, 1.0, 0.44, 1.05, -4.9);
@@ -902,6 +912,7 @@ function updatePrompt(){
   else if(nearFacing(SINK,1.4)&&!sinkDone) hot={id:"sink", tip:"按 E 检查水槽"};
   else if(nearFacing(FRIDGE,1.5)&&!fridgeDone) hot={id:"fridge", tip:"按 E 打开冰箱"};
   else if(entryClosed&&nearFacing(ENTRYDOOR,1.6)) hot={id:"entry", tip:"按 E 开门"};
+  else if(!bathDoorOpen&&nearFacing(BATHDOOR,1.4)) hot={id:"bath", tip:"按 E 推推这扇门"};
   else if(bedSlammed&&nearFacing(BEDDOOR,1.3)) hot={id:"bed", tip:"按 E 推卧室门"};
   else if(nearFacing(TOILET,1.35)&&!toiletFlushed&&EVT>=3) hot={id:"toilet", tip:"按 E 按下冲水"};
   else if(nearFacing(BOWLS,1.5)&&!bowlsDone) hot={id:"bowls", tip:"按 E 看看碗筷"};
@@ -931,6 +942,15 @@ function act(){
   }
   if(hot.id==="bed"){
     thud(); addNoise(0.35); caption("反锁了。门后传来一声，像有人转过身去。", 4200);
+  }
+  if(hot.id==="bath" && !bathRattling){
+    bathRattling=true; rattleSnd(); addNoise(0.2);
+    const t0=performance.now();
+    (function an(){ const t=(performance.now()-t0)/1000;
+      bathHinge.rotation.y = -0.05*Math.abs(Math.sin(t*18))*Math.exp(-t*4);
+      if(t<0.6) requestAnimationFrame(an);
+      else { bathHinge.rotation.y=0; bathRattling=false; } })();
+    caption("推不动。像从里面锁着——走道太安静了，先回客厅看看吧。", 4200);
   }
   if(hot.id==="entry" && !entryRattling){
     entryRattling=true; rattleSnd(); addNoise(0.3);
@@ -962,12 +982,12 @@ function act(){
     // 一本书真的被抽出来,翻着掉到地上
     const bk=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.22,0.16),
       new THREE.MeshStandardMaterial({color:0x6a4630, roughness:.7}));
-    bk.position.set(-2.1,1.25,-2.28); scene.add(bk);
+    bk.position.set(-2.1,1.30,-2.36); scene.add(bk);
     const t0=performance.now(); let thudded=false;
     (function an(){ const t=(performance.now()-t0)/1000;
-      if(t<0.5){ bk.position.z=-2.28+(t/0.5)*0.2; }
+      if(t<0.5){ bk.position.z=-2.36+(t/0.5)*0.26; }
       else if(t<1.0){ const q=(t-0.5)/0.5;
-        bk.position.z=-2.08+q*0.3; bk.position.y=1.25-q*q*1.14;
+        bk.position.z=-2.10+q*0.3; bk.position.y=1.30-q*q*1.19;
         bk.rotation.x=-q*1.45; bk.rotation.z=q*0.35; }
       else { bk.position.y=0.11; if(!thudded){ thudded=true; bumpSnd(); } return; }
       requestAnimationFrame(an); })();
