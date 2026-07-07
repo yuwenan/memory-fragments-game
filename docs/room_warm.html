@@ -500,13 +500,16 @@ for(let i=0;i<2;i++){ const dz=1.2+(i?0.29:-0.29);
 solids.push({rect:true, x0:1.5, x1:2.0, z0:0.6, z1:1.8});
 let tvScreen=null;
 loadModel("Television_01", { x:1.75, z:1.2, y:0.42, rotY: -Math.PI/2, onload(o){
+  // 关掉屏面环境反射(否则映出HDRI夜空=那片蓝反光)
+  o.traverse(m=>{ if(m.isMesh&&m.material){ m.material.envMapIntensity=0;
+    m.material.roughness=Math.max(m.material.roughness||0.5,0.75); m.material.needsUpdate=true; }});
   const b=new THREE.Box3().setFromObject(o);
-  const w=(b.max.z-b.min.z)*0.5, h=(b.max.y-b.min.y)*0.42;   // 缩小到屏幕框内
+  const w=(b.max.z-b.min.z)*0.52, h=(b.max.y-b.min.y)*0.46;
   tvScreen = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
     new THREE.MeshBasicMaterial({ map:staticTex, color:0x000000 }));
   tvScreen.rotation.y = -Math.PI/2;
-  // 嵌进屏幕面(原来贴在最前的机壳外沿,飘在电视前面);往机身里挪一点
-  tvScreen.position.set(b.min.x+0.035, (b.min.y+b.max.y)/2+0.02, (b.min.z+b.max.z)/2);
+  // 屏幕在机身偏一侧(另一侧是喇叭旋钮);往屏幕侧偏移,贴到屏面
+  tvScreen.position.set(b.min.x+0.012, (b.min.y+b.max.y)/2+0.02, (b.min.z+b.max.z)/2-0.085);
   scene.add(tvScreen);
 }});
 // 地毯
