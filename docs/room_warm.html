@@ -520,7 +520,16 @@ loadModel("Television_01", { x:1.75, z:1.2, y:0.42, rotY: -Math.PI/2, onload(o){
 box(new THREE.MeshStandardMaterial({color:0x14100c, roughness:.5}), 0.045,0.014,0.13, 1.58,0.435,0.68);
 box(new THREE.MeshStandardMaterial({color:0x5a3a2a, roughness:.7}), 0.14,0.03,0.19, 1.62,0.443,1.66);
 box(new THREE.MeshStandardMaterial({color:0x36452e, roughness:.7}), 0.13,0.028,0.17, 1.63,0.472,1.67);
-loadModel("wall_clock", { x:-3.5, z:-0.4, y:1.78, rotY:Math.PI/2 });   // 挂钟挪到西墙空位(原来挤在电视/照片旁),面朝屋里
+loadModel("wall_clock", { x:-3.5, z:-1.7, y:1.82, rotY:Math.PI/2 });   // 挂钟挪到西墙前段空墙(靠厨房门那侧,原来挤在蜡笔画旁)
+// 空墙再补一张褪色旧照片(人像早已褪没=这个家的人正在被抹去)
+const fadedTex=(()=>{ const cv=document.createElement("canvas"); cv.width=180; cv.height=230; const x=cv.getContext("2d");
+  const g=x.createLinearGradient(0,0,0,230); g.addColorStop(0,"#cabb98"); g.addColorStop(1,"#b09b74"); x.fillStyle=g; x.fillRect(0,0,180,230);
+  const v=x.createRadialGradient(90,110,20,90,115,140); v.addColorStop(0,"rgba(120,100,70,0)"); v.addColorStop(1,"rgba(70,55,34,0.5)"); x.fillStyle=v; x.fillRect(0,0,180,230);
+  x.fillStyle="rgba(90,74,50,0.16)"; x.beginPath(); x.ellipse(90,96,26,32,0,0,7); x.fill();          // 淡到几乎没了的人影
+  x.beginPath(); x.moveTo(64,210); x.quadraticCurveTo(90,120,116,210); x.fill();
+  x.fillStyle="rgba(60,44,28,0.22)"; x.fillRect(0,0,180,9); x.fillRect(0,221,180,9); x.fillRect(0,0,9,230); x.fillRect(171,0,9,230);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+frameArt(0.36,0.46, -3.5,1.18,-1.15, Math.PI/2, fadedTex);
 
 // ===== 厨房(橱柜/水槽/灶台/冰箱) =====
 const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
