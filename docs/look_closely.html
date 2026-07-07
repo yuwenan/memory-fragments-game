@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>记忆碎片 · 仔细看</title>
+<style>
+  :root{ --bone:#e8dcc2; --brass:#d8b874; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:#08070a; overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--bone);
+    -webkit-user-select:none; user-select:none; touch-action:none; }
+  #stage{ position:fixed; inset:0; overflow:hidden; cursor:grab; }
+  #stage.grabbing{ cursor:grabbing; }
+  #scene{ position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; }
+  #scene img{ display:block; width:100%; height:100%;
+    box-shadow:0 30px 120px rgba(0,0,0,.9); }
+  /* 隐藏碎片热点：平时隐形,找到后金环+标签,提示时脉冲 */
+  .spot{ position:absolute; width:8%; transform:translate(-50%,-50%);
+    aspect-ratio:1; border-radius:50%; pointer-events:none; }
+  .spot .ring{ position:absolute; inset:0; border-radius:50%;
+    border:2px solid rgba(230,200,120,0); box-shadow:0 0 0 rgba(230,190,110,0);
+    transition:border-color .4s, box-shadow .4s, transform .4s; transform:scale(.6); }
+  .spot.found .ring{ border-color:rgba(240,215,150,.9);
+    box-shadow:0 0 26px rgba(235,190,110,.6), inset 0 0 18px rgba(235,190,110,.35);
+    transform:scale(1); }
+  .spot.hintpulse .ring{ border-color:rgba(230,200,120,.5); animation:hint 1.1s ease-in-out 3; }
+  @keyframes hint{ 0%,100%{ transform:scale(.7); opacity:.2 } 50%{ transform:scale(1.15); opacity:1 } }
+  .spot .lab{ position:absolute; left:50%; bottom:-8px; transform:translate(-50%,100%);
+    white-space:nowrap; font-size:13px; letter-spacing:1px; color:var(--brass);
+    background:rgba(12,9,6,.82); padding:4px 10px; border-radius:14px;
+    box-shadow:0 4px 16px rgba(0,0,0,.6); opacity:0; transition:opacity .5s .2s; pointer-events:none; }
+  .spot.found .lab{ opacity:1; }
+  /* 后期叠层 */
+  #vig{ position:fixed; inset:0; z-index:5; pointer-events:none;
+    background:radial-gradient(ellipse 74% 70% at 50% 46%,transparent 44%,rgba(0,0,0,.72) 100%); }
+  #grain{ position:fixed; inset:-50%; z-index:6; pointer-events:none; opacity:.05;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:grain .5s steps(2) infinite; }
+  @keyframes grain{ 0%{transform:translate(0,0)} 50%{transform:translate(-6%,4%)} 100%{transform:translate(4%,-5%)} }
+  /* HUD */
+  #hud{ position:fixed; left:0; right:0; top:0; z-index:10; padding:16px 18px;
+    display:flex; align-items:center; justify-content:space-between; pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.55),transparent); }
+  #title{ font-size:14px; letter-spacing:4px; color:#b6a487; text-shadow:0 2px 8px #000; }
+  #count{ font-size:15px; letter-spacing:2px; color:var(--brass); text-shadow:0 2px 8px #000; }
+  #count b{ font-size:19px; }
+  #tip{ position:fixed; left:0; right:0; bottom:88px; z-index:10; text-align:center;
+    font-size:14px; letter-spacing:3px; color:#cbbfa6; text-shadow:0 2px 10px #000; pointer-events:none;
+    opacity:0; transition:opacity .5s; }
+  #tip.show{ opacity:1; }
+  #bar{ position:fixed; left:0; right:0; bottom:22px; z-index:10; display:flex; gap:14px;
+    justify-content:center; }
+  .btn{ pointer-events:auto; padding:11px 26px; border:1px solid rgba(200,170,110,.5); border-radius:26px;
+    background:rgba(24,17,10,.72); color:#f0dcab; font-size:14px; letter-spacing:3px; cursor:pointer;
+    backdrop-filter:blur(4px); transition:background .2s, box-shadow .2s; }
+  .btn:hover{ background:rgba(60,48,28,.8); box-shadow:0 0 22px rgba(230,190,110,.28); }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  /* 找到时的碎片飞入提示 */
+  #frag{ position:fixed; left:50%; top:44%; z-index:12; transform:translate(-50%,-50%) scale(.6);
+    max-width:78vw; text-align:center; font-size:17px; line-height:1.9; letter-spacing:1px;
+    color:var(--bone); text-shadow:0 2px 12px #000; opacity:0; pointer-events:none;
+    transition:opacity .5s, transform .5s; }
+  #frag.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  /* 载入 */
+  #gate{ position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:22px; background:#08070a; text-align:center; transition:opacity .8s; }
+  #gate.gone{ opacity:0; pointer-events:none; }
+  #gate h1{ margin:0; font-size:24px; font-weight:400; letter-spacing:10px; color:#cbb98c; }
+  #gate .s{ font-size:13px; letter-spacing:4px; color:#7d715a; }
+  /* 通关 */
+  #done{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:26px; text-align:center; padding:0 28px;
+    background:radial-gradient(ellipse at 50% 40%,#20160b,#05040699 80%);
+    opacity:0; pointer-events:none; transition:opacity 1.2s; }
+  #done.show{ opacity:1; pointer-events:auto; }
+  #done .dk{ font-size:13px; letter-spacing:6px; color:#b8975a; }
+  #done .dt{ max-width:600px; font-size:18px; line-height:2.2; letter-spacing:1px; color:#e7d6b0;
+    white-space:pre-line; text-shadow:0 2px 10px #000; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scene">
+    <img id="pic" src="./assets/home/photo_family.jpg" alt="">
+    <!-- 隐藏碎片热点(坐标为图片百分比,可微调) -->
+    <div class="spot" data-x="48" data-y="42" data-cap="中间那张脸——被人用手指，一点点抹掉了。"><i class="ring"></i><span class="lab">被抹掉的脸</span></div>
+    <div class="spot" data-x="50" data-y="57" data-cap="棉袄上的花，是妈妈一针一线绣的。"><i class="ring"></i><span class="lab">绣的花</span></div>
+    <div class="spot" data-x="44" data-y="12" data-cap="爸爸看着镜头，眼神却飘向别处。"><i class="ring"></i><span class="lab">飘开的眼神</span></div>
+    <div class="spot" data-x="83" data-y="14" data-cap="照相馆的假布景。这个家，是不是也是假的。"><i class="ring"></i><span class="lab">假的背景</span></div>
+    <div class="spot" data-x="62" data-y="70" data-cap="照片上有一道裂痕，正好从你身上穿过。"><i class="ring"></i><span class="lab">裂痕</span></div>
+  </div>
+</div>
+<div id="vig"></div><div id="grain"></div>
+<div id="hud">
+  <div id="title">记 忆 碎 片 · 仔 细 看</div>
+  <div id="count">碎片 <b id="cn">0</b> / <span id="ct">5</span></div>
+</div>
+<div id="tip">双指缩放 / 滚轮放大 · 拖动查看 · 在细节里找出记忆碎片</div>
+<div id="frag"></div>
+<div id="bar">
+  <button class="btn" id="hintBtn">提 示</button>
+  <button class="btn" id="resetBtn">复 位</button>
+</div>
+<div id="gate">
+  <h1>仔 细 看</h1>
+  <div class="s">正在冲洗这张旧照片…</div>
+</div>
+<div id="done">
+  <div class="dk">记 忆 碎 片</div>
+  <div class="dt" id="doneText"></div>
+  <button class="btn" id="backBtn">收 起 这 段 记 忆</button>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const stage=$("#stage"), scene=$("#scene"), pic=$("#pic");
+let baseW=0, baseH=0, zoom=1, panX=0, panY=0;
+const MINZ=1, MAXZ=5;
+
+function fit(){
+  const vw=innerWidth, vh=innerHeight, ar=pic.naturalWidth/pic.naturalHeight;
+  // contain 适配(竖图在横屏两侧留黑=电影感)
+  let w=vh*ar, h=vh; if(w>vw){ w=vw; h=vw/ar; }
+  baseW=w; baseH=h;
+  scene.style.width=w+"px"; scene.style.height=h+"px";
+  zoom=1; panX=(vw-w)/2; panY=(vh-h)/2; apply();
+}
+function clamp(){
+  zoom=Math.max(MINZ,Math.min(MAXZ,zoom));
+  const w=baseW*zoom, h=baseH*zoom, vw=innerWidth, vh=innerHeight;
+  const mx=w<=vw ? (vw-w)/2 : 0, mxr=w<=vw ? (vw-w)/2 : vw-w;
+  panX=Math.min(Math.max(panX, Math.min(mx,mxr)), Math.max(mx,mxr));
+  const my=h<=vh ? (vh-h)/2 : 0, myr=h<=vh ? (vh-h)/2 : vh-h;
+  panY=Math.min(Math.max(panY, Math.min(my,myr)), Math.max(my,myr));
+}
+function apply(){ clamp(); scene.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`; }
+function zoomAt(cx, cy, factor){
+  const wx=(cx-panX)/zoom, wy=(cy-panY)/zoom;
+  zoom*=factor; zoom=Math.max(MINZ,Math.min(MAXZ,zoom));
+  panX=cx-wx*zoom; panY=cy-wy*zoom; apply();
+}
+// 滚轮缩放
+stage.addEventListener("wheel", e=>{ e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY<0?1.16:0.86); }, {passive:false});
+// 拖动 + 双指缩放
+let drag=null, pinch=null, moved=0;
+stage.addEventListener("pointerdown", e=>{ stage.setPointerCapture(e.pointerId);
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===1){ drag={x:e.clientX,y:e.clientY}; moved=0; stage.classList.add("grabbing"); }
+  else if(pts.size===2){ drag=null; pinch=pinchState(); } });
+stage.addEventListener("pointermove", e=>{ if(!pts.has(e.pointerId)) return;
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2 && pinch){ const p=pinchState();
+    zoomAt(p.cx,p.cy, p.dist/pinch.dist); pinch=p; }
+  else if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+    panX+=dx; panY+=dy; moved+=Math.hypot(dx,dy); drag={x:e.clientX,y:e.clientY}; apply(); } });
+function endPtr(e){ pts.delete(e.pointerId); if(pts.size<2) pinch=null;
+  if(pts.size===0){ stage.classList.remove("grabbing");
+    if(moved<6) tryFind(e.clientX,e.clientY); drag=null; } }
+stage.addEventListener("pointerup", endPtr);
+stage.addEventListener("pointercancel", endPtr);
+const pts=new Map();
+function pinchState(){ const a=[...pts.values()];
+  return { cx:(a[0].x+a[1].x)/2, cy:(a[0].y+a[1].y)/2, dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y) }; }
+
+// 热点查找
+const spots=[...document.querySelectorAll(".spot")].map(el=>{
+  el.style.left=el.dataset.x+"%"; el.style.top=el.dataset.y+"%";
+  return { el, x:+el.dataset.x/100, y:+el.dataset.y/100, cap:el.dataset.cap, found:false };
+});
+let found=0;
+function tryFind(cx,cy){
+  // 屏幕坐标 → 场景本地像素 → 图片百分比
+  const lx=(cx-panX)/zoom, ly=(cy-panY)/zoom;
+  const px=lx/baseW, py=ly/baseH;
+  let best=null, bd=1e9;
+  for(const s of spots){ if(s.found) continue;
+    const d=Math.hypot((s.x-px)*baseW*zoom, (s.y-py)*baseH*zoom);  // 屏幕像素距离
+    if(d<bd){ bd=d; best=s; } }
+  const R = zoom>1.4 ? 46 : 30;   // 放大后更好点中,鼓励仔细看
+  if(best && bd<R){ collect(best); }
+}
+function collect(s){
+  s.found=true; s.el.classList.add("found"); s.el.classList.remove("hintpulse");
+  found++; $("#cn").textContent=found; chime();
+  const f=$("#frag"); f.textContent=s.cap; f.classList.add("show");
+  clearTimeout(collect._t); collect._t=setTimeout(()=>f.classList.remove("show"), 2600);
+  if(found>=spots.length) setTimeout(finish, 1400);
+}
+function finish(){
+  $("#doneText").textContent = MEMORY;
+  $("#done").classList.add("show");
+}
+const MEMORY = "这是你们唯一的一张合影。\n那天你哭着不肯照，妈妈把最爱吃的糖塞进你手心。\n\n可你怎么想，都想不起自己那天，是什么表情——\n因为中间那张脸，早就被人抹掉了。\n\n照片背面写着一行小字：\n「样本 7931 · 家庭记忆 · 已录入」。";
+
+// 提示:脉冲一个还没找到的碎片
+$("#hintBtn").addEventListener("click", ()=>{
+  const un=spots.filter(s=>!s.found); if(!un.length) return;
+  const s=un[(Math.random()*un.length)|0];
+  // 把该碎片居中并放大一点
+  const tx=innerWidth/2 - s.x*baseW*2, ty=innerHeight/2 - s.y*baseH*2;
+  zoom=2; panX=tx; panY=ty; apply();
+  s.el.classList.add("hintpulse"); setTimeout(()=>s.el.classList.remove("hintpulse"),3400);
+});
+$("#resetBtn").addEventListener("click", fit);
+$("#backBtn").addEventListener("click", ()=>{
+  try{ const c=JSON.parse(localStorage.getItem("mf3d_cleared")||"[]");
+    if(!c.includes("warm")){ c.push("warm"); localStorage.setItem("mf3d_cleared", JSON.stringify(c)); } }catch(e){}
+  location.href="corridor3d.html";
+});
+
+// 找到碎片的音效
+let AC=null;
+function chime(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  for(const [d,fr] of [[0,880],[0.09,1174],[0.18,1568]]){ const t=AC.currentTime+d;
+    const o=AC.createOscillator(), g=AC.createGain(); o.type="triangle"; o.frequency.value=fr;
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.09,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+0.55); } }catch(e){} }
+
+addEventListener("resize", ()=>{ if(baseW) fit(); });
+function start(){ fit(); $("#gate").classList.add("gone");
+  $("#tip").classList.add("show"); setTimeout(()=>$("#tip").classList.remove("show"), 5200); }
+if(pic.complete && pic.naturalWidth) start();
+else pic.addEventListener("load", start);
+pic.addEventListener("error", ()=>{ $("#gate .s").textContent="照片没找到（assets/home/photo_family.jpg）"; });
+</script>
+</body>
+</html>
