@@ -498,50 +498,61 @@ box(new THREE.MeshStandardMaterial({color:0x36452e, roughness:.7}), 0.13,0.028,0
 // ===== 厨房(橱柜/水槽/灶台/冰箱) =====
 const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
 const topM = new THREE.MeshStandardMaterial({ color:0xb9ac96, roughness:.35 });
-const steelM = new THREE.MeshStandardMaterial({ color:0x9aa2a8, roughness:.3, metalness:.85 });
+const steelM = new THREE.MeshStandardMaterial({ color:0xaab2b8, roughness:.35, metalness:.5 });   // 场景没环境贴图,金属度太高反射不到东西会发黑
 box(cabM, 0.62, 0.88, 3.0, 5.12, 0.44, -0.6);            // 下柜(东墙)
 box(topM, 0.68, 0.045, 3.06, 5.12, 0.9, -0.6);           // 台面
 box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, -1.6);             // 上柜×3
 box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, -0.8);
 box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, 0.0);
-// 水槽+龙头
-box(steelM, 0.45, 0.06, 0.5, 5.10, 0.935, -0.5);
+// 水槽:窄边框+下沉盆体(原来是一整块凸出台面的深色金属板,读不出是水槽)
+box(new THREE.MeshStandardMaterial({color:0xb4bac0, roughness:.35, metalness:.3}), 0.46, 0.02, 0.52, 5.10, 0.912, -0.5);
+box(new THREE.MeshStandardMaterial({color:0x565c62, roughness:.45, metalness:.25}), 0.38, 0.05, 0.44, 5.10, 0.885, -0.5);
 { const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.26,8), steelM);
   tap.position.set(5.33,1.05,-0.5); scene.add(tap);
   const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.2,8), steelM);
   spout.rotation.z=Math.PI/2; spout.position.set(5.24,1.17,-0.5); scene.add(spout); }
 // 灶台(黑玻璃面)
 box(new THREE.MeshStandardMaterial({ color:0x0d0d0f, roughness:.15 }), 0.5, 0.012, 0.55, 5.10, 0.925, 0.25);
-// 台面摆件:砧板/两个调料罐/灶上一口锅(妈妈说"饭在锅里")
-box(new THREE.MeshStandardMaterial({color:0x9a7a4e, roughness:.8}), 0.3,0.022,0.2, 5.08,0.945,0.68);
-for(const [pz,ch] of [[0.5,0x7a4a28],[0.585,0x4a5a30]]){
+// 灶眼两个:黑玻璃上有了圈才读得出是灶台
+for(const bz of [0.1,0.4]){
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.085,0.007,8,24),
+    new THREE.MeshStandardMaterial({color:0x4c5258, roughness:.4, metalness:.3}));
+  ring.rotation.x=-Math.PI/2; ring.position.set(5.10,0.934,bz); scene.add(ring);
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.008,12),
+    new THREE.MeshStandardMaterial({color:0x33383d, roughness:.5}));
+  cap.position.set(5.10,0.936,bz); scene.add(cap);
+}
+// 台面摆件:砧板/两个调料罐/后灶眼上坐着一口锅(妈妈说"饭在锅里")
+box(new THREE.MeshStandardMaterial({color:0x9a7a4e, roughness:.8}), 0.3,0.022,0.2, 5.08,0.945,0.72);
+for(const [pz,ch] of [[0.6,0x8a5a34],[0.685,0x5a6a3c]]){
   const jar=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.09,10),
-    new THREE.MeshStandardMaterial({color:ch, roughness:.4})); jar.position.set(5.33,0.98,pz); scene.add(jar); }
-{ const potM=new THREE.MeshStandardMaterial({color:0x23262a, roughness:.35, metalness:.6});
+    new THREE.MeshStandardMaterial({color:ch, roughness:.4})); jar.position.set(5.35,0.98,pz); scene.add(jar); }
+{ const potM=new THREE.MeshStandardMaterial({color:0x454c54, roughness:.4, metalness:.35});
   const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.1,0.085,18), potM);
-  pot.position.set(5.10,0.975,0.25); scene.add(pot);
+  pot.position.set(5.10,0.982,0.4); scene.add(pot);
   const lid=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.115,0.012,18),
-    new THREE.MeshStandardMaterial({color:0x2e3236, roughness:.3, metalness:.7}));
-  lid.position.set(5.10,1.024,0.25); scene.add(lid);
+    new THREE.MeshStandardMaterial({color:0x565e66, roughness:.35, metalness:.4}));
+  lid.position.set(5.10,1.03,0.4); scene.add(lid);
   const knb=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,6),
-    new THREE.MeshStandardMaterial({color:0x111111, roughness:.4})); knb.position.set(5.10,1.04,0.25); scene.add(knb); }
-// 冰箱(门真的能开:按E拉开→里面空的+冷藏灯一直闪→几秒后自己合上)
-const fridgeM = new THREE.MeshStandardMaterial({ color:0xb9bec2, roughness:.35, metalness:.5 });
-box(fridgeM, 0.67, 1.85, 0.72, 4.89, 0.925, -2.2);                                  // 箱体
-plane(new THREE.MeshStandardMaterial({color:0x0b0d0f, roughness:.9}), 0.68, 1.72,   // 内腔黑
-  [4.55,0.94,-2.2],[0,-Math.PI/2,0]);
-for(const sy of [0.5,0.95,1.4]) box(new THREE.MeshStandardMaterial({color:0xd6dade, roughness:.4}),
-  0.02,0.012,0.6, 4.535,sy,-2.2);                                                   // 空架子,空得刺眼(关门时藏在门板里)
-const frHinge=new THREE.Group(); frHinge.position.set(4.545,0.925,-2.545); scene.add(frHinge);
-const frDoor=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.82,0.70), fridgeM);
-frDoor.position.set(0,0,0.35); frHinge.add(frDoor);
-{ const h1=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.5,0.04), steelM); h1.position.set(-0.045,0.42,0.62); frHinge.add(h1);
-  const h2=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.32,0.04), steelM); h2.position.set(-0.045,-0.31,0.62); frHinge.add(h2); }
-const frLight = new THREE.PointLight(0xcfe4ff, 0, 1.8, 2.0); frLight.position.set(4.42,1.3,-2.2); scene.add(frLight);
+    new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:.4})); knb.position.set(5.10,1.047,0.4); scene.add(knb); }
+// 冰箱(挪到北墙左段:原来贴着窗户,开门正好扫穿凸出的窗台;门改朝厨房开)
+const fridgeM = new THREE.MeshStandardMaterial({ color:0xc4c9cd, roughness:.4, metalness:.25 });
+box(fridgeM, 0.72, 1.85, 0.64, 2.55, 0.925, -2.27);                                 // 箱体贴墙
+plane(new THREE.MeshStandardMaterial({color:0xd9dee2, roughness:.6}), 0.64, 1.72,   // 白色内腔(黑腔读不出是冰箱)
+  [2.55,0.94,-1.945]);
+for(const sy of [0.5,0.95,1.4]) box(new THREE.MeshStandardMaterial({color:0xe8ecef, roughness:.5}),
+  0.58,0.014,0.03, 2.55,sy,-1.93);                                                  // 空架子(关门时藏进门板)
+const frHinge=new THREE.Group(); frHinge.position.set(2.2,0.925,-1.915); scene.add(frHinge);
+const frDoor=new THREE.Mesh(new THREE.BoxGeometry(0.68,1.82,0.05), fridgeM);
+frDoor.position.set(0.34,0,0); frHinge.add(frDoor);
+{ const h1=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.5,0.04), steelM); h1.position.set(0.62,0.42,0.045); frHinge.add(h1);
+  const h2=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.32,0.04), steelM); h2.position.set(0.62,-0.31,0.045); frHinge.add(h2); }
+const frLight = new THREE.PointLight(0xcfe4ff, 0, 1.8, 2.0); frLight.position.set(2.55,1.3,-1.62); scene.add(frLight);
 let frT=0, frOpen=false;
-solids.push({rect:true, x0:4.75, x1:5.45, z0:-2.6, z1:0.75});
+solids.push({rect:true, x0:2.19, x1:2.91, z0:-2.62, z1:-1.9});
+solids.push({rect:true, x0:4.75, x1:5.45, z0:-2.15, z1:0.75});   // 东墙橱柜(冰箱已挪走)
 const SINK = new THREE.Vector3(5.1,0.95,-0.5);
-const FRIDGE = new THREE.Vector3(4.85,1.0,-2.2);
+const FRIDGE = new THREE.Vector3(2.55,1.0,-2.05);
 // 餐桌上两副碗筷:一副动过,一副留给你
 const bowlM = new THREE.MeshStandardMaterial({ color:0xe6e0d2, roughness:.3 });
 { const b1=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.05,0.055,14), bowlM);
@@ -1191,7 +1202,7 @@ function frame(){
     bathHinge.rotation.y = -(1.9*e + 0.05*Math.sin(bathDoorT*16)*(1-bathDoorT)); }
   // 冰箱门开合(缓动)+冷藏灯闪
   frT += ((frOpen?1:0)-frT)*Math.min(1,dt*4.0);
-  frHinge.rotation.y = -1.8 * frT*frT*(3-2*frT);
+  frHinge.rotation.y = -1.5 * frT*frT*(3-2*frT);   // 开到1.5rad,别扫到客厅隔墙角
   frLight.intensity = frT>0.1 ? frT*(0.5+(Math.random()<0.14?0:0.9)) : 0;
   if((tGlobal*10|0)%2===0) drawRainTex();
   glassMat.color.setScalar(0.7 + lightning*0.5);   // 夜景比屋里暗一档,雷电时整扇窗亮起
