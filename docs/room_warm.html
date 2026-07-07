@@ -481,8 +481,17 @@ loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
 loadModel("wooden_table_02",       { x:3.7, z:-0.1, rotY: 0.3, solidR:0.75 });
 loadModel("painted_wooden_chair_01",{ x:3.1, z:-0.75, rotY: 0.5, solidR:0.28 });
 loadModel("painted_wooden_chair_01",{ x:4.3, z:0.45, rotY: -2.4, solidR:0.28 });
-// 电视柜+电视:长边顺着隔墙贴放(原来横着杵出来,一头戳进厨房一头顶着门口)
-box(new THREE.MeshStandardMaterial({ color:0x241a10, roughness:.55 }), 0.5,0.42,1.15, 1.75,0.21,1.2);
+// 柜门共用材质(电视柜/厨房柜共用)
+const cabDoorM = new THREE.MeshStandardMaterial({ color:0x5c4230, roughness:.55 });
+const cabPanelM= new THREE.MeshStandardMaterial({ color:0x46301f, roughness:.62 });
+const brassKnob= new THREE.MeshStandardMaterial({ color:0x8a7440, roughness:.35, metalness:.7 });
+// 电视柜:柜体+两扇抽屉门面+黄铜拉手(不再是光板盒子);柜面朝屋里(-X),z向长边
+box(new THREE.MeshStandardMaterial({ color:0x3a2a1a, roughness:.55 }), 0.5,0.42,1.15, 1.75,0.21,1.2);
+for(let i=0;i<2;i++){ const dz=1.2+(i?0.29:-0.29);
+  box(cabDoorM, 0.025, 0.34, 0.54, 1.505, 0.22, dz);           // 抽屉门面
+  box(cabPanelM, 0.01, 0.22, 0.42, 1.492, 0.22, dz);           // 门芯凹板
+  const hd=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.02,0.16), brassKnob);
+  hd.position.set(1.485,0.22,dz); scene.add(hd); }
 solids.push({rect:true, x0:1.5, x1:2.0, z0:0.6, z1:1.8});
 let tvScreen=null;
 loadModel("Television_01", { x:1.75, z:1.2, y:0.42, rotY: -Math.PI/2, onload(o){
@@ -508,14 +517,28 @@ loadModel("wall_clock", { x:1.93, z:1.2, y:1.72, rotY:-Math.PI/2 });   // 挂钟
 const cabM = new THREE.MeshStandardMaterial({ color:0x50392a, roughness:.6 });
 const topM = new THREE.MeshStandardMaterial({ color:0xb9ac96, roughness:.35 });
 const steelM = new THREE.MeshStandardMaterial({ color:0xaab2b8, roughness:.35, metalness:.5 });   // 场景没环境贴图,金属度太高反射不到东西会发黑
-// 下柜+台面:中段z[-0.12,0.62]留给独立电灶(GLTF)
-box(cabM, 0.62, 0.88, 1.98, 5.12, 0.44, -1.11);
+// 橱柜门:柜体+门芯凹板+把手(不再是光板盒子);柜门朝屋里(-X面,东墙x=5.45)
+function eastCabinet(zc, zw, yc, h, depth, nDoors){
+  const xWall=5.45, xFront=xWall-depth;
+  box(cabM, depth, h, zw, xWall-depth/2, yc, zc);                          // 柜体
+  const dw=zw/nDoors;
+  for(let i=0;i<nDoors;i++){
+    const dz=zc - zw/2 + dw*(i+0.5);
+    box(cabDoorM, 0.03, h-0.05, dw-0.028, xFront-0.015, yc, dz);           // 门扇
+    box(cabPanelM, 0.012, h-0.2, dw-0.16, xFront-0.03, yc, dz);            // 门芯凹板
+    const hz=dz + (nDoors>1 ? (i%2? -dw/2+0.055 : dw/2-0.055) : dw/2-0.06);
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.14,8), brassKnob);
+    handle.position.set(xFront-0.045, yc, hz); scene.add(handle);
+  }
+}
+// 下柜(灶台z[-0.12,0.62]留空)+台面
+eastCabinet(-1.11, 1.98, 0.44, 0.88, 0.62, 3);
 box(topM, 0.68, 0.045, 1.98, 5.12, 0.9, -1.11);
-box(cabM, 0.62, 0.88, 0.28, 5.12, 0.44, 0.76);
+eastCabinet(0.76, 0.28, 0.44, 0.88, 0.62, 1);
 box(topM, 0.68, 0.045, 0.28, 5.12, 0.9, 0.76);
-box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, -1.6);             // 上柜×3
-box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, -0.8);
-box(cabM, 0.62, 0.7, 0.34, 5.12, 2.0, 0.0);
+// 上柜(浅进深挂柜,带底板不再露黑洞)
+eastCabinet(-1.55, 1.0, 2.0, 0.72, 0.32, 2);
+eastCabinet(-0.35, 0.7, 2.0, 0.72, 0.32, 1);
 // 水槽:窄边框+下沉盆体(原来是一整块凸出台面的深色金属板,读不出是水槽)
 box(new THREE.MeshStandardMaterial({color:0xb4bac0, roughness:.35, metalness:.3}), 0.46, 0.02, 0.52, 5.10, 0.912, -0.5);
 box(new THREE.MeshStandardMaterial({color:0x565c62, roughness:.45, metalness:.25}), 0.38, 0.05, 0.44, 5.10, 0.885, -0.5);
