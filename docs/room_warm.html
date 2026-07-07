@@ -435,6 +435,8 @@ loadModel("modern_coffee_table_01",{ x:-1.7, z:0.9, rotY: 0, onload(o){
     new THREE.MeshStandardMaterial({color:0xcfc7b2, roughness:.9}));
   paper.rotation.y=0.4; paper.position.set(-1.92, b.max.y+0.005, 1.08); scene.add(paper); } });
 loadModel("potted_plant_01",       { x:-3.15, z:2.1, rotY: 0.4, solidR:0.3 });
+loadModel("potted_plant_02",       { x:-3.2, z:-2.15, rotY: 1.1, solidR:0.32 });   // 客厅西北角补一盆
+loadModel("ceramic_vase_02",       { x:5.05, z:0.8, y:0.9225, rotY: 0.7 });          // 厨房小台面一只花瓶
 // ===== 书架(自建:GLTF模型隔板位置猜不准,书全陷进板里;自己搭,隔板/书全对齐) =====
 {
   const shW=1.04, shH=1.92, shD=0.32, shX=-2.0, shZ=-2.47;
@@ -546,25 +548,17 @@ box(new THREE.MeshStandardMaterial({color:0x565c62, roughness:.45, metalness:.25
   tap.position.set(5.33,1.05,-0.5); scene.add(tap);
   const spout=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.2,8), steelM);
   spout.rotation.z=Math.PI/2; spout.position.set(5.24,1.17,-0.5); scene.add(spout); }
-// 电灶:真模型(Poly Haven electric_stove),锅在模型载入后坐上灶面
+// 电灶:真模型(Poly Haven electric_stove),搪瓷锅坐灶面(妈妈说"饭在锅里")
 loadModel("electric_stove", { x:5.12, z:0.25, rotY:-Math.PI/2, onload(o){
   const b=new THREE.Box3().setFromObject(o);
-  potG.position.y = Math.min(b.max.y, 0.92)+0.004;
+  loadModel("pot_enamel_01", { x:5.08, z:0.3, y:b.max.y, rotY:0.5 });
 }});
-// 台面摆件:砧板/两个调料罐/后灶眼上坐着一口锅(妈妈说"饭在锅里")
-box(new THREE.MeshStandardMaterial({color:0x9a7a4e, roughness:.8}), 0.3,0.022,0.2, 5.08,0.945,0.72);
+// 台面摆件:真砧板/两个调料罐/老式电水壶(都是真模型)
+loadModel("wooden_cutting_board", { x:5.06, z:-1.55, y:0.9225, rotY:0.4 });
+loadModel("vintage_electric_kettle", { x:5.02, z:-1.9, y:0.9225, rotY:-0.6 });
 for(const [pz,ch] of [[0.6,0x8a5a34],[0.685,0x5a6a3c]]){
   const jar=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.09,10),
     new THREE.MeshStandardMaterial({color:ch, roughness:.4})); jar.position.set(5.35,0.98,pz); scene.add(jar); }
-const potG=new THREE.Group(); potG.position.set(5.10,0.92,0.32); scene.add(potG);
-{ const potM=new THREE.MeshStandardMaterial({color:0x454c54, roughness:.4, metalness:.35});
-  const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.1,0.085,18), potM);
-  pot.position.y=0.042; potG.add(pot);
-  const lid=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.115,0.012,18),
-    new THREE.MeshStandardMaterial({color:0x565e66, roughness:.35, metalness:.4}));
-  lid.position.y=0.09; potG.add(lid);
-  const knb=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,6),
-    new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:.4})); knb.position.y=0.107; potG.add(knb); }
 // 冰箱(按真冰箱结构实做:空腔+上冷冻门+下冷藏门+玻璃隔板+果蔬抽屉+门内瓶架)
 const fridgeM = new THREE.MeshStandardMaterial({ color:0xd6dadd, roughness:.38, metalness:.15 });
 const linerM  = new THREE.MeshStandardMaterial({ color:0xdfe3e6, roughness:.55 });
