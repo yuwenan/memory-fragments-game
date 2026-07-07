@@ -367,6 +367,11 @@ for(const o of doorObjs){ if(!o.d.id || !lockedBy(o.d.id)) continue;
   for(const m of o.glows) m.material.opacity *= 0.35;
   o.frosted.material.emissiveIntensity = 0.4;
   o.plBase = 0.7; o.pl.intensity = 0.7; }
+// 已通关的门：熄灯(记忆已取回,不再重进)
+for(const o of doorObjs){ if(!o.d.id || !CLEARED.has(o.d.id)) continue;
+  for(const m of o.glows) m.material.opacity *= 0.12;
+  o.frosted.material.emissiveIntensity = 0.12;
+  o.plBase = 0.25; o.pl.intensity = 0.25; }
 const visited = CLEARED;   // 门口检测/文案沿用
 const mirror = { progress: CLEARED.size/3, clarity: CLEARED.size/3 };  // 返回走廊直接呈现已擦亮
 const MIR_W = 1.55, MIR_H = 2.55, MIR_Z = Z1 + 0.12;
@@ -492,13 +497,16 @@ function updatePrompt(){
 }
 function promptForDoor(o){
   if(o.d.mirror) return mirror.progress>=1 ? "按 E 穿过镜子" : `镜子太脏，看不清里面的人……还差 ${3-visited.size} 段记忆`;
-  if(o.d.id){ const b = lockedBy(o.d.id);
+  if(o.d.id){
+    if(CLEARED.has(o.d.id)) return "这间房的记忆，你已经取回了。";   // 已通关,不再重进
+    const b = lockedBy(o.d.id);
     if(b) return `锁着。门后的东西，似乎还没轮到你看——先去「${b.name}」`; }
   return o.d.prompt || ("按 E 进入 · "+o.d.name);
 }
 function tryEnter(){
   if(entering||!atDoor) return;
   if(atDoor.d.mirror && mirror.progress<1) return;   // 没集齐记忆，穿不过去
+  if(atDoor.d.id && CLEARED.has(atDoor.d.id)){ lockedRattle(atDoor); return; }   // 已通关：记忆已取回,推不开
   if(atDoor.d.id && lockedBy(atDoor.d.id)){ lockedRattle(atDoor); return; }   // 顺序锁：推不开
   entering=true; for(const k in keys)keys[k]=false;
   padVec={x:0,y:0}; promptEl.classList.remove("show");
