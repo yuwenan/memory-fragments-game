@@ -481,10 +481,11 @@ loadModel("modern_ceiling_lamp_01",{ x:-0.7, z:0.5, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
 loadModel("modern_ceiling_lamp_01",{ x:3.7, z:-0.8, y:0, rotY:0, onload(o){
   o.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(o); o.position.y += 2.8 - b.max.y; } });
-// 餐桌椅:摆正(原来table斜0.3+两椅乱角度乱位),桌居中,两椅贴长边对坐
-loadModel("wooden_table_02",       { x:3.6, z:-0.1, rotY: 0, solidR:0.75 });
-loadModel("painted_wooden_chair_01",{ x:2.85, z:-0.1, rotY: Math.PI/2, solidR:0.26 });   // 西侧,面朝桌
-loadModel("painted_wooden_chair_01",{ x:4.35, z:-0.1, rotY: -Math.PI/2, solidR:0.26 });  // 东侧,面朝桌
+// 餐桌椅:桌长边是X向(1.13),椅子放Z向两侧才对(原来放在X向两端=一把顶灶台一把顶隔墙)
+// 整组挪到厨房中间(x3.35),离东墙台面(x>4.7)和灶台(z0.25)都留出距离
+loadModel("wooden_table_02",       { x:3.35, z:-0.45, rotY: 0, solidR:0.7 });
+loadModel("painted_wooden_chair_01",{ x:3.35, z:-1.1, rotY: 0, solidR:0.26 });      // 北侧,面朝桌(+Z)
+loadModel("painted_wooden_chair_01",{ x:3.35, z:0.2, rotY: Math.PI, solidR:0.26 });  // 南侧,面朝桌(-Z)
 // 柜门共用材质(电视柜/厨房柜共用)
 const cabDoorM = new THREE.MeshStandardMaterial({ color:0x5c4230, roughness:.55 });
 const cabPanelM= new THREE.MeshStandardMaterial({ color:0x46301f, roughness:.62 });
@@ -614,14 +615,14 @@ const FRIDGE = new THREE.Vector3(2.55,1.0,-2.05);
 // 餐桌上两副碗筷:一副动过,一副留给你
 const bowlM = new THREE.MeshStandardMaterial({ color:0xe6e0d2, roughness:.3 });
 { const b1=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.05,0.055,14), bowlM);
-  b1.position.set(3.5,0.775,-0.32); scene.add(b1);
+  b1.position.set(3.2,0.805,-0.55); scene.add(b1);
   const b2=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.05,0.055,14), bowlM);
-  b2.position.set(3.94,0.775,0.14); b2.rotation.z=0.5; b2.position.y=0.76; scene.add(b2);   // 动过的那副,歪着
+  b2.position.set(3.55,0.79,-0.3); b2.rotation.z=0.5; scene.add(b2);   // 动过的那副,歪着
   const ch=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.008,0.02),
     new THREE.MeshStandardMaterial({ color:0x7a4a26, roughness:.5 }));
   ch.position.set(3.62,0.752,-0.24); ch.rotation.y=0.5; scene.add(ch);
   const ch2=ch.clone(); ch2.position.set(4.05,0.752,0.02); ch2.rotation.y=-1.1; scene.add(ch2); }
-const BOWLS = new THREE.Vector3(3.7,0.85,-0.1);
+const BOWLS = new THREE.Vector3(3.35,0.85,-0.45);
 
 // ===== 卫生间:马桶/浴缸/洗手台/镜子 =====
 const ceramic = new THREE.MeshStandardMaterial({ color:0xdfe3e0, roughness:.22, metalness:.02 });
@@ -988,13 +989,13 @@ function nearFacing(target, maxD, minFace){
   toV.copy(target).sub(camera.position).normalize();
   return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
 }
-const SOFA=new THREE.Vector3(-2.7,0.7,0.9);   // 坐点挪到座面前沿+半径放宽,茶几外也够得着
+const SOFA=new THREE.Vector3(-2.6,1.2,0.9);   // 坐点抬到视线高度:太低时平视朝向它几乎朝下,facing点积不够沙发永远坐不上
 const TV=new THREE.Vector3(1.75,1.0,1.2);
 let hot=null;
 function updatePrompt(){
   hot=null;
   if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
-  if(nearFacing(SOFA,2.6)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
+  if(nearFacing(SOFA,2.8,0.3)&&!sofaDone) hot={id:"sofa", tip:"按 E 坐一下沙发"};
   else if(nearFacing(SINK,1.4)&&!sinkDone) hot={id:"sink", tip:"按 E 检查水槽"};
   else if(nearFacing(FRIDGE,1.5)&&!fridgeDone) hot={id:"fridge", tip:"按 E 打开冰箱"};
   else if(entryClosed&&nearFacing(ENTRYDOOR,1.6)) hot={id:"entry", tip:"按 E 开门"};
