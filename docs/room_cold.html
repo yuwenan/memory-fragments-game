@@ -53,7 +53,15 @@
   #eBtn{position:fixed;right:30px;bottom:60px;z-index:11;width:76px;height:76px;border-radius:50%;
     border:1px solid rgba(150,190,220,.4);background:rgba(14,24,32,.5);color:#cfe3f2;font-size:20px;
     display:none;align-items:center;justify-content:center;touch-action:none;}
-  @media (pointer:coarse){#pad{display:block;}#eBtn{display:flex;}}
+  #answers{position:fixed;left:50%;bottom:8%;z-index:12;transform:translateX(-50%);
+    display:none;flex-direction:column;gap:11px;width:min(540px,88vw);}
+  #answers.show{display:flex;}
+  #answers button{padding:13px 18px;border:1px solid rgba(200,220,210,.32);border-radius:3px;
+    background:rgba(18,34,28,.85);color:#e2ecdf;font-size:16px;letter-spacing:3px;cursor:pointer;
+    font-family:inherit;text-align:left;text-shadow:0 0 8px rgba(0,0,0,.6);
+    box-shadow:0 4px 16px rgba(0,0,0,.5);transition:background .15s,transform .1s;}
+  #answers button:hover{background:rgba(30,54,44,.92);transform:translateY(-1px);}
+  #answers .n{display:inline-block;width:1.7em;color:#8fb0a0;}
 </style>
 </head>
 <body>
@@ -63,6 +71,7 @@
 <div id="tag">冷光的门后 · 教室</div>
 <div id="cap"></div>
 <div id="prompt"></div>
+<div id="answers"></div>
 <div id="blk"></div>
 <div id="fadein"></div>
 <div id="flash">
@@ -100,7 +109,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x020304);
 scene.fog = new THREE.FogExp2(0x070a0c, 0.035);
 const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.04, 60);
-camera.position.set(2.7, 1.55, 2.5);
+camera.position.set(0.75, 1.16, 1.5);   // 钉在你自己的座位(第3排第3列),面朝黑板
 const solids = [];
 
 // ===== 材质（复用 home 纹理，调冷色）=====
@@ -384,38 +393,25 @@ function foot(){ const a=au(); if(!a) return; const s=noiseSrc(0.12);
   s.connect(f).connect(g).connect(a.destination); s.start();
   if(Math.random()<0.1) creak(0.7, 220, 140); }
 
-// ===== 控制 =====
-let yaw=0.47, pitch=0; const keys={};   // 进门看向教室纵深(黑板方向)
+// ===== 控制:钉在座位,只能转头,不能走 =====
+let yaw=0, pitch=0;   // 坐着面朝黑板(-z)
 const euler=new THREE.Euler(0,0,0,"YXZ");
 function applyLook(){ euler.set(pitch,yaw,0); camera.quaternion.setFromEuler(euler); } applyLook();
-addEventListener("keydown", e=>{ const k=e.key.toLowerCase();
-  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){keys[k]=true;e.preventDefault();}
-  if(k==="e"||k==="enter") act(); });
-addEventListener("keyup", e=>keys[e.key.toLowerCase()]=false);
 const SENS=0.0022;
-canvas.addEventListener("click", ()=>{ if(started && !document.pointerLockElement && !QA.get("qa")) canvas.requestPointerLock(); });
-addEventListener("mousemove", e=>{ if(document.pointerLockElement===canvas){ yaw-=e.movementX*SENS; pitch-=e.movementY*SENS;
-  pitch=Math.max(-1.3,Math.min(1.3,pitch)); applyLook(); } });
-let padActive=false, padVec={x:0,y:0}, look={id:null,x:0,y:0};
-const pad=$("#pad"), stick=pad.querySelector("i");
-pad.addEventListener("pointerdown", e=>{padActive=true;padMove(e);pad.setPointerCapture(e.pointerId);});
-pad.addEventListener("pointermove", e=>{if(padActive)padMove(e);});
-pad.addEventListener("pointerup", ()=>{padActive=false;padVec={x:0,y:0};stick.style.transform="translate(0,0)";});
-function padMove(e){ const r=pad.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
-  const m=Math.hypot(dx,dy),mx=r.width/2-8; if(m>mx){dx*=mx/m;dy*=mx/m;} padVec={x:dx/mx,y:dy/mx}; stick.style.transform=`translate(${dx}px,${dy}px)`; }
-canvas.addEventListener("touchstart", e=>{const t=e.changedTouches[0]; if(t.clientX>innerWidth*0.4)look={id:t.identifier,x:t.clientX,y:t.clientY};},{passive:true});
-canvas.addEventListener("touchmove", e=>{for(const t of e.changedTouches){if(t.identifier===look.id){yaw-=(t.clientX-look.x)*0.005;pitch-=(t.clientY-look.y)*0.005;pitch=Math.max(-1.3,Math.min(1.3,pitch));look.x=t.clientX;look.y=t.clientY;applyLook();}}},{passive:true});
+canvas.addEventListener("click", ()=>{ if(started && !answersOpen && !document.pointerLockElement && !QA.get("qa") && !("ontouchstart" in window)) canvas.requestPointerLock(); });
+addEventListener("mousemove", e=>{ if(document.pointerLockElement===canvas){
+  yaw-=e.movementX*SENS; pitch-=e.movementY*SENS;
+  yaw=Math.max(-1.5,Math.min(1.5,yaw)); pitch=Math.max(-1.1,Math.min(1.0,pitch)); applyLook(); } });
+// 触摸拖动转头(手机)
+let look={id:null,x:0,y:0};
+canvas.addEventListener("touchstart", e=>{const t=e.changedTouches[0]; look={id:t.identifier,x:t.clientX,y:t.clientY};},{passive:true});
+canvas.addEventListener("touchmove", e=>{for(const t of e.changedTouches){if(t.identifier===look.id){
+  yaw-=(t.clientX-look.x)*0.005; pitch-=(t.clientY-look.y)*0.005;
+  yaw=Math.max(-1.5,Math.min(1.5,yaw)); pitch=Math.max(-1.1,Math.min(1.0,pitch));
+  look.x=t.clientX;look.y=t.clientY;applyLook();}}},{passive:true});
 canvas.addEventListener("touchend", e=>{for(const t of e.changedTouches)if(t.identifier===look.id)look.id=null;},{passive:true});
-$("#eBtn").addEventListener("pointerdown", e=>{e.preventDefault();act();});
-
-function walkable(x,z){
-  if(x<-3.95||x>3.95||z<-3.15||z>3.15) return false;
-  for(const s of solids){
-    if(s.rect){ if(x>s.x0-0.05&&x<s.x1+0.05&&z>s.z0-0.05&&z<s.z1+0.05) return false; }
-    else if(Math.hypot(x-s.x,z-s.z)<s.r+0.05) return false;
-  }
-  return true;
-}
+// 数字键 1/2/3 作答
+addEventListener("keydown", e=>{ if(answersOpen && "123".includes(e.key)){ e.preventDefault(); pick(+e.key-1); } });
 
 let capTimer=null;
 function caption(text, ms){
@@ -423,94 +419,83 @@ function caption(text, ms){
   clearTimeout(capTimer); capTimer=setTimeout(()=>el.classList.remove("show"), ms||3600);
 }
 
-// ===== 事件链 =====
-// EVT: 0进入 → 2点名册 → 3黑板写字 → 4开课桌+灭灯+影子 → 5影子消失+卷子可翻
-let EVT=0;
-let rosterDone=false, boardDone=false, boardWriting=false, deskOpened=false, figureGone=false;
-let lightsOut=false, blackRows=0;
-const promptEl=$("#prompt");
-const fwd=new THREE.Vector3(), toV=new THREE.Vector3();
-function nearFacing(target, maxD, minFace){
-  camera.getWorldDirection(fwd);
-  const d=camera.position.distanceTo(target); if(d>maxD) return false;
-  toV.copy(target).sub(camera.position).normalize();
-  return fwd.dot(toV) > (minFace!==undefined?minFace:0.55);
+// ===== 灯:一排排灭(答一题灭一排,顶嘴多灭) =====
+let lightsOut=false, deadRows=0;
+function killRow(){ if(deadRows>=3){ lightsOut=true; return; }
+  const row=[0,1,2][deadRows++]; thud();
+  for(const t of tubes) if(t.row===row){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
+  if(deadRows>=3) lightsOut=true;
 }
-let hot=null;
-function updatePrompt(){
-  hot=null;
-  if(frozen||$("#flash").classList.contains("show")){ promptEl.classList.remove("show"); return; }
-  if(nearFacing(ROSTER,1.5)&&!rosterDone) hot={id:"roster", tip:"按 E 翻开点名册"};
-  else if(EVT>=3&&!deskOpened&&nearFacing(MYDESK,1.4)) hot={id:"desk", tip:"按 E 打开课桌"};
-  else if(EVT>=5&&deskOpened&&nearFacing(MYDESK,1.4)) hot={id:"paper", tip:"按 E 把卷子翻过来"};
-  else if(deskOpened&&EVT<5&&nearFacing(MYDESK,1.4)) hot={id:"paper0", tip:"按 E 看看卷子"};
-  if(hot){ promptEl.textContent=hot.tip; promptEl.classList.add("show"); }
-  else promptEl.classList.remove("show");
-}
-function act(){
-  if(frozen||!hot) return;
-  if(hot.id==="roster"){
-    rosterDone=true; creak(0.6, 300, 200);
-    caption("点名册上，所有名字都被红笔划掉了。", 3600);
-    setTimeout(()=>{ caption("只有一行没划——没有名字，只有编号：7931。", 4200); EVT=Math.max(EVT,2); }, 3800);
-    setTimeout(()=>{ crackle(); caption("广播喀啦响了一声。像有人拿起话筒，又轻轻放下。", 4200); }, 8400);
-  }
-  if(hot.id==="desk"){
-    deskOpened=true; creak(0.8, 260, 150);
-    let v=0; const open=()=>{ v+=0.06; myLid.rotation.x=-Math.min(1,v)*1.15;
-      if(v<1) requestAnimationFrame(open); else { paper.visible=true; } }; open();
-    setTimeout(()=>{ caption("课桌里有一张卷子。红笔零分，批注只有一句——「这么简单都不会」。", 4600); }, 900);
-    setTimeout(()=>{ startLightsOut(); }, 5400);
-  }
-  if(hot.id==="paper0"){ caption("你不想碰它。手心在发烫。", 3200); }
-  if(hot.id==="paper"){ openMemory(); }
-}
-// 黑板自己写字
-const BOARD_TEXT="把 手 伸 出 来";
-function writeBoard(){
-  if(boardWriting||boardDone) return; boardWriting=true;
-  const chars=BOARD_TEXT.split(" ");
-  let i=0;
+
+// ===== 老师的影子:从讲台沿走道一步步逼到你桌前 =====
+let figActive=false, figTarget=-2.6, examEnded=false, figArrived=false;
+figure.position.set(1.5,1.28,-2.6);   // 你右手边的走道
+function figWake(){ if(figActive) return; figActive=true; figure.visible=true; setHeart(true);
+  caption("讲台那边,站起来一个很高很高的影子。", 4200); }
+function figStep(extra){ figTarget=Math.min(1.0, figTarget + 0.9 + (extra||0)); }
+
+// ===== 黑板自己写字(通用) =====
+let boardWriting=false;
+function writeBoard(text, done){
+  boardWriting=true; chalkBase();
+  const chars=[...text.replace(/\s/g,"")]; let i=0;
   const step=()=>{
-    if(i>=chars.length){ boardDone=true; EVT=Math.max(EVT,3); sting();
-      caption("粉笔灰簌簌往下掉。讲台上没有人。", 4600); return; }
+    if(i>=chars.length){ boardWriting=false; chalkTex.needsUpdate=true; done&&done(); return; }
     scratch();
-    cx2d.font="bold 92px 'PingFang SC','Microsoft YaHei',sans-serif";
-    cx2d.fillStyle="rgba(226,232,226,0.88)";
-    cx2d.save(); cx2d.translate(120+i*118, 168+(i%2?8:-6)); cx2d.rotate((Math.random()-0.5)*0.1);
-    cx2d.fillText(chars[i],0,0); cx2d.restore();
-    chalkTex.needsUpdate=true;
-    i++; setTimeout(step, 460+Math.random()*260);
+    cx2d.font="bold 88px 'PingFang SC','Microsoft YaHei',sans-serif";
+    cx2d.fillStyle="rgba(226,232,226,0.9)";
+    const n=chars.length, span=Math.min(120, 660/n), x0=384-(n-1)*span/2;
+    cx2d.save(); cx2d.translate(x0+i*span, 150+(i%2?8:-6)); cx2d.rotate((Math.random()-0.5)*0.09);
+    cx2d.fillText(chars[i],-44,0); cx2d.restore(); chalkTex.needsUpdate=true;
+    i++; setTimeout(step, 300+Math.random()*170);
   };
-  caption("黑板上，有字自己浮出来。", 3000);
-  setTimeout(step, 800);
+  setTimeout(step, 350);
 }
-// 一排排灭灯(从后排到讲台)
-function startLightsOut(){
-  if(lightsOut) return; lightsOut=true;
-  const rows=[0,1,2];   // 后→中→前
-  let ri=0;
-  const next=()=>{
-    if(ri>=rows.length){
-      setHeart(true); figMat.opacity=0.92; figure.visible=true;
-      setTimeout(()=>{ sting(); caption("讲台边，站着一个很高很高的影子。", 4600); EVT=Math.max(EVT,4); }, 700);
-      return; }
-    thud();
-    for(const t of tubes) if(t.row===rows[ri]){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
-    if(ri===0) caption("最后一排的灯，灭了。", 2600);
-    ri++; setTimeout(next, 950);
-  };
-  next();
+
+// ===== 答题(核心机制) =====
+const QUESTIONS=[
+  { board:"点 名", say:"广播喀啦一声。开始点名了。", opts:[
+    { t:"到。", defiant:false, cap:"你听见自己应了一声,很小。" },
+    { t:"（不出声）", defiant:true, cap:"没有人应。后排的灯,灭了。" },
+    { t:"7931。", defiant:false, cap:"你报出那个编号。像报过很多次。" } ] },
+  { board:"把 手 伸 出 来", say:"黑板上的字,是自己浮出来的。", opts:[
+    { t:"摊开手,朝上。", defiant:false, cap:"你把手伸了出去,手心朝上。" },
+    { t:"把手缩回来。", defiant:true, cap:"你缩回了手。影子往前,逼近了一步。" },
+    { t:"凭什么？", defiant:true, cap:"「凭什么」——话没落,又暗了一排。" } ] },
+  { board:"这 么 简 单 都 不 会", say:"课桌里那张卷子,红字很刺眼。", opts:[
+    { t:"是我太笨。", defiant:false, cap:"你听见自己这么说,像背熟了。" },
+    { t:"不是。", defiant:true, cap:"「不是」一出口,满屋的灯全灭了。" },
+    { t:"我没有说谎。", defiant:true, cap:"你想起桌上刻的那行字。影子已经到了眼前。" } ] },
+];
+let qi=-1, answersOpen=false, examStarted=false;
+function startExam(){ if(examStarted) return; examStarted=true; setTimeout(()=>ask(0), 900); }
+function ask(i){ qi=i; const q=QUESTIONS[i];
+  hideAnswers();
+  if(i===0) crackle();
+  if(i===2){ creak(0.8,260,150); let v=0;    // 问到卷子时,课桌盖自己掀开露出零分卷
+    const op=()=>{ v+=0.05; myLid.rotation.x=-Math.min(1,v)*1.15; if(v<1) requestAnimationFrame(op); else paper.visible=true; }; op(); }
+  caption(q.say, 3800);
+  writeBoard(q.board, ()=>{ if(!figActive) figWake(); setTimeout(()=>showAnswers(q), 750); });
 }
-// 影子被走近 → 消失
-function figureVanish(){
-  figureGone=true; figure.visible=false;
-  sting(); rulerClatter(); ruler.visible=true;
-  setTimeout(()=>{ setHeart(false);
-    for(const t of tubes){ t.li.intensity=0.75; t.tube.material.color.setHex(0x7d8993); }   // 半亮,病恹恹
-    caption("影子没有了。地上躺着一把戒尺。", 4200);
-    setTimeout(()=>{ paperGlow.intensity=1.1; caption("你课桌上的卷子，自己翻回了正面。", 4200); EVT=Math.max(EVT,5); }, 4600);
-  }, 1400);
+function showAnswers(q){ const box=$("#answers"); box.innerHTML="";
+  q.opts.forEach((o,k)=>{ const b=document.createElement("button");
+    b.innerHTML=`<span class="n">${k+1}</span>${o.t}`;
+    b.addEventListener("click", ()=>pick(k)); box.appendChild(b); });
+  box.classList.add("show"); answersOpen=true;
+  if(document.pointerLockElement) document.exitPointerLock();   // 放出光标,能点也能按1/2/3
+}
+function hideAnswers(){ $("#answers").classList.remove("show"); answersOpen=false; }
+function pick(k){ if(!answersOpen) return; const q=QUESTIONS[qi], o=q.opts[k];
+  hideAnswers(); caption(o.cap, 4200);
+  killRow();
+  if(o.defiant){ sting(); killRow(); figStep(0.5); } else { figStep(0); }
+  if(!figActive) figWake();
+  if(qi < QUESTIONS.length-1){ setTimeout(()=>ask(qi+1), 4400); }
+  else endExam();
+}
+function endExam(){ if(examEnded) return; examEnded=true;
+  figTarget=1.0; paper.visible=true; paperGlow.intensity=0.8; lightsOut=true;
+  for(const t of tubes){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
 }
 
 // ===== 碎片闪回 =====
@@ -519,6 +504,7 @@ let boxOpened=false;
 function openMemory(){
   if(boxOpened) return; boxOpened=true; frozen=true;
   if(document.pointerLockElement) document.exitPointerLock();
+  setHeart(false);
   const fEl=$("#flash"); fEl.classList.add("show");
   const ft=$("#flashText"); ft.textContent="";
   let i=0; const timer=setInterval(()=>{ i++; ft.textContent=MEMORY.slice(0,i);
@@ -533,58 +519,47 @@ $("#flashBack").addEventListener("click", ()=>{
 // ===== 导演 =====
 let bellDone=false;
 function director(dt){
-  // 进屋 → 后门自己合上
+  // 进屋 → 后门自己合上(把你关在里面)
   if(started && !doorClosed && doorT<1){
     doorT=Math.min(1, doorT+dt*0.22);
     backDoor.position.x = 2.0 + doorT*0.95;
-    if(doorT>=1){ doorClosed=true; thud(); caption("后门，在你身后合上了。", 3400); }
+    if(doorT>=1){ doorClosed=true; thud(); caption("后门,在你身后合上了。你走不了。", 3600); }
   }
-  // 点名册翻过之后,看向黑板 → 字自己浮出来
-  if(EVT>=2 && !boardDone && !boardWriting && nearFacing(BOARD, 4.2, 0.42)) writeBoard();
-  // 影子:始终侧对着你;走近 → 消失
-  if(EVT>=4 && !figureGone && figure.visible){
+  // 影子沿走道一步步逼到你桌前
+  if(figActive && !boxOpened){
+    figure.position.z += (figTarget - figure.position.z) * Math.min(1, dt*0.85);
+    figure.position.y = 1.28 + Math.sin(tGlobal*1.4)*0.012;
     figure.lookAt(camera.position.x, figure.position.y, camera.position.z);
-    figure.position.y = 1.28 + Math.sin(tGlobal*0.9)*0.01;
-    if(camera.position.distanceTo(figure.position)<2.3) figureVanish();
+    if(figMat.opacity<0.92) figMat.opacity=Math.min(0.92, figMat.opacity+dt*0.5);
+    // 走到你桌前 → 举起戒尺 → 记忆闪回
+    if(examEnded && !figArrived && figure.position.z>0.35){ figArrived=true;
+      sting(); rulerClatter(); ruler.visible=true;
+      caption("影子举起了手里的东西。", 2600);
+      setTimeout(openMemory, 1600);
+    }
   }
 }
 
 // ===== 主循环 =====
-const clock=new THREE.Clock(); const SPEED=2.1, up=new THREE.Vector3(0,1,0);
-const mv=new THREE.Vector3(), right=new THREE.Vector3();
+const clock=new THREE.Clock();
 let started=false, frozen=true, tGlobal=0;
+const SEAT=new THREE.Vector3(0.75,1.16,1.5);
 function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(0.05, clock.getDelta()); tGlobal+=dt;
-  if(started && !frozen && !$("#flash").classList.contains("show")){
-    camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize(); right.crossVectors(fwd,up).normalize();
-    mv.set(0,0,0);
-    if(keys["w"]||keys["arrowup"])mv.add(fwd); if(keys["s"]||keys["arrowdown"])mv.sub(fwd);
-    if(keys["d"]||keys["arrowright"])mv.add(right); if(keys["a"]||keys["arrowleft"])mv.sub(right);
-    if(padActive){ mv.addScaledVector(fwd,-padVec.y); mv.addScaledVector(right,padVec.x); }
-    if(mv.lengthSq()>0.0001){
-      mv.normalize().multiplyScalar(SPEED*dt);
-      const nx=camera.position.x+mv.x, nz=camera.position.z+mv.z;
-      if(walkable(nx,camera.position.z)) camera.position.x=nx;
-      if(walkable(camera.position.x,nz)) camera.position.z=nz;
-      stepAcc+=Math.hypot(mv.x,mv.z);
-      if(stepAcc>0.62){ stepAcc=0; foot(); }
-    }
-    director(dt);
-  }
-  camera.position.y=1.55;
-  // 日光灯频闪:EVT越深闪得越狠;有一根(后排右)一直病态地闪
+  camera.position.copy(SEAT);          // 钉在座位上,只能转头不能走
+  if(started && !frozen && !$("#flash").classList.contains("show")) director(dt);
+  // 日光灯频闪(还没灭的那几根);有一根一直病态地闪
   if(!lightsOut){
-    for(let i=0;i<tubes.length;i++){ const t=tubes[i];
+    for(let i=0;i<tubes.length;i++){ const t=tubes[i]; if(t.li.intensity<=0) continue;
       let v=t.base;
       if(i===1) v *= (Math.random()<0.22 ? 0.15 : 0.85+Math.random()*0.15);      // 坏灯管
-      else if(Math.random() < 0.015+EVT*0.012) v *= 0.3+Math.random()*0.4;
+      else if(Math.random() < 0.015+(figActive?0.05:0)) v *= 0.3+Math.random()*0.4;
       t.li.intensity=v;
       t.tube.material.color.setHex(v<t.base*0.5 ? 0x2a3138 : 0xdfeeff);
     }
   }
-  if(EVT>=4 && !figureGone) deskLamp.intensity = 0.9*(Math.random()<0.06 ? 0.4 : 1);
-  updatePrompt();
+  if(figActive) deskLamp.intensity = 0.9*(Math.random()<0.06 ? 0.4 : 1);
   composer.render();
 }
 const composer=new EffectComposer(renderer);
@@ -595,52 +570,50 @@ function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjection
   renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); }
 addEventListener("resize", resize); resize(); frame();
 
+function beginRoom(){
+  started=true; frozen=false; startBuzz(); $("#cross").style.opacity="1";
+  if(!bellDone){ bellDone=true; bell(); }
+  caption("晚自习早就结束了。可你还坐在这里——你被留下了。", 4600);
+  setTimeout(startExam, 2600);
+}
 manager.onLoad=()=>{ const b=$("#goBtn"); b.disabled=false; b.textContent="走 进 教 室";
   $("#gateHint").textContent="点击进入 · 你的座位还空着"; };
 setTimeout(()=>{ const b=$("#goBtn"); if(b.disabled){ b.disabled=false; b.textContent="走 进 教 室"; } }, 6000);
 $("#goBtn").addEventListener("click", ()=>{ if($("#goBtn").disabled)return;
-  started=true; frozen=false; startBuzz();
-  $("#gate").classList.add("gone"); $("#cross").style.opacity="1";
+  $("#gate").classList.add("gone");
   if(!("ontouchstart" in window) && !QA.get("qa")) canvas.requestPointerLock();
-  if(!bellDone){ bellDone=true; bell(); }
-  caption("晚自习早就结束了。可你还坐过这里。", 4200);
+  beginRoom();
 });
-// 从走廊开门过场进来:不停黑底按钮页,黑场直接淡进教室
+// 从走廊开门过场进来:黑场直接淡进教室
 if(!QA.get("qa") && QA.get("from")==="corridor"){
   $("#gate").classList.add("gone");
   const fadeEl=$("#fadein"); fadeEl.style.opacity="1"; fadeEl.style.transition="none";
-  started=true; frozen=false; $("#cross").style.opacity="1";
-  setTimeout(()=>{ fadeEl.style.transition="opacity 1.8s"; fadeEl.style.opacity="0";
-    caption("晚自习早就结束了。可你还坐过这里。", 4200); }, 350);
+  beginRoom();
+  setTimeout(()=>{ fadeEl.style.transition="opacity 1.8s"; fadeEl.style.opacity="0"; }, 350);
 }
 // 声音要用户手势:第一次点击/按键自动接上
 { const unlock=()=>{ const a=au(); if(a && a.state==="suspended") a.resume();
-    startBuzz(); if(!bellDone){ bellDone=true; bell(); }
-    removeEventListener("pointerdown", unlock); removeEventListener("keydown", unlock); };
+    startBuzz(); removeEventListener("pointerdown", unlock); removeEventListener("keydown", unlock); };
   addEventListener("pointerdown", unlock); addEventListener("keydown", unlock); }
 
 // ===== QA 钩子 =====
 if(QA.get("qa")){
   $("#gate").classList.add("gone"); started=true; frozen=false; startBuzz=()=>{}; bellDone=true;
-  if(QA.get("px")) camera.position.x=parseFloat(QA.get("px"));
-  if(QA.get("pz")) camera.position.z=parseFloat(QA.get("pz"));
   if(QA.get("yaw")) yaw=parseFloat(QA.get("yaw"));
   if(QA.get("pitch")) pitch=parseFloat(QA.get("pitch"));
   applyLook();
-  const e=parseInt(QA.get("evt")||"0");
-  if(e>=2){ rosterDone=true; EVT=2; }
-  if(e>=3){ boardDone=true; EVT=3; }
-  if(e>=4){ deskOpened=true; myLid.rotation.x=-1.15; paper.visible=true; lightsOut=true;
-    for(const t of tubes){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
-    figMat.opacity=0.92; figure.visible=true; EVT=4; }
-  if(e>=5){ figureGone=true; figure.visible=false; ruler.visible=true;
-    for(const t of tubes){ t.li.intensity=0.75; t.tube.material.color.setHex(0x7d8993); }
-    paperGlow.intensity=1.1; EVT=5; }
   doorT=1; doorClosed=true; backDoor.position.x=2.95;
+  const q=parseInt(QA.get("q")||"-1");
+  if(q>=0){ examStarted=true; deadRows=Math.min(q,3);
+    for(let r=0;r<deadRows;r++) for(const t of tubes) if(t.row===[0,1,2][r]){ t.li.intensity=0; t.tube.material.color.setHex(0x11161b); }
+    figWake(); figTarget=-2.6+q*0.9; figure.position.z=figTarget;
+    ask(Math.min(q,QUESTIONS.length-1));
+  } else setTimeout(startExam, 500);
 }
-window.__room={ scene, camera, renderer, get EVT(){return EVT;}, set EVT(v){EVT=v;},
-  set yaw(v){yaw=v;applyLook();}, set pitch(v){pitch=v;applyLook();},
-  figure, solids, walkable, tubes, get hot(){return hot;}, act };
+window.__room={ scene, camera, renderer, figure, tubes, QUESTIONS,
+  get qi(){return qi;}, ask, pick, figWake, startExam,
+  get figZ(){return figure.position.z;}, get answersOpen(){return answersOpen;}, get deadRows(){return deadRows;},
+  set yaw(v){yaw=v;applyLook();}, set pitch(v){pitch=v;applyLook();} };
 </script>
 </body>
 </html>
