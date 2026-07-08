@@ -1019,7 +1019,12 @@ function updatePrompt(){
 }
 function act(){
   if(frozen||!hot) return;
-  if(hot.id==="stand"){ sitting=false; promptEl.classList.remove("show"); return; }
+  if(hot.id==="stand"){ sitting=false;
+    // 起身:座点在沙发碰撞体内,不推出去人会卡死动不了;沿+X(朝屋里)找最近可站立点
+    let sx=camera.position.x;
+    for(let i=0;i<16 && !walkable(sx,camera.position.z); i++) sx+=0.06;
+    camera.position.x=sx;
+    promptEl.classList.remove("show"); return; }
   if(hot.id==="sofa"){
     sofaDone=true; sitting=true; seatX=-2.72; seatZ=0.9;   // 真的坐下:视角蹲下+挪到座面
     creak(1.0, 260, 120); addNoise(0.15);
